@@ -16,7 +16,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from blocklog.exceptions import AuthenticationError, AuthorizationError, BlocklogAuthError, TransportError
+from blocklog.exceptions import (
+    AuthenticationError,
+    AuthorizationError,
+    BlocklogAuthError,
+    TransportError,
+)
 
 if TYPE_CHECKING:
     from blocklog.client import BlocklogClient
