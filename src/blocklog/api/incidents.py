@@ -21,6 +21,7 @@ Backend endpoints
 - GET    /api/v1/incidents/{id}/workspace
 - POST   /api/v1/incidents/{id}/workspace
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -42,7 +43,7 @@ class IncidentHandle:
     >>> inc.resolve(summary="False positive — model weights corrected")
     """
 
-    def __init__(self, data: dict[str, Any], client: "IncidentsClient") -> None:
+    def __init__(self, data: dict[str, Any], client: IncidentsClient) -> None:
         self._data = data
         self._client = client
         self.id: str = str(data.get("id", ""))
@@ -63,7 +64,7 @@ class IncidentHandle:
 
     # -- Lifecycle methods --
 
-    def assign(self, assignee: str, *, notes: str | None = None) -> "IncidentHandle":
+    def assign(self, assignee: str, *, notes: str | None = None) -> IncidentHandle:
         """Assign this incident to a team member."""
         self._data = self._client.assign(self.id, assignee=assignee, notes=notes)
         return self
@@ -74,7 +75,7 @@ class IncidentHandle:
         *,
         root_cause: Any = None,
         remediation_actions: Any = None,
-    ) -> "IncidentHandle":
+    ) -> IncidentHandle:
         """Mark this incident as resolved."""
         self._data = self._client.resolve(
             self.id,
@@ -84,9 +85,13 @@ class IncidentHandle:
         )
         return self
 
-    def close(self, *, notes: str = "", approval_status: str = "approved") -> "IncidentHandle":
+    def close(
+        self, *, notes: str = "", approval_status: str = "approved"
+    ) -> IncidentHandle:
         """Close this incident."""
-        self._data = self._client.close(self.id, notes=notes, approval_status=approval_status)
+        self._data = self._client.close(
+            self.id, notes=notes, approval_status=approval_status
+        )
         return self
 
     def annotate(self, text: str, *, author: str | None = None) -> dict[str, Any]:
@@ -117,7 +122,7 @@ class IncidentHandle:
         """Return workspace items pinned to this incident."""
         return self._client.workspace_items(self.id)
 
-    def refresh(self) -> "IncidentHandle":
+    def refresh(self) -> IncidentHandle:
         """Re-fetch the latest state from the backend."""
         self._data = self._client.get(self.id)._data
         return self
@@ -142,7 +147,7 @@ class IncidentsClient:
     >>> inc.resolve(summary="False positive — corrected")
     """
 
-    def __init__(self, client: "BlocklogClient") -> None:
+    def __init__(self, client: BlocklogClient) -> None:
         self._client = client
 
     def create(
@@ -204,7 +209,9 @@ class IncidentsClient:
     def update(self, incident_id: str, **fields: Any) -> dict[str, Any]:
         """Partially update an incident's fields."""
         return self._client.retry.run(
-            lambda: self._client.transport.request("PATCH", f"/incidents/{incident_id}", json=fields)
+            lambda: self._client.transport.request(
+                "PATCH", f"/incidents/{incident_id}", json=fields
+            )
         )
 
     def assign(
@@ -215,7 +222,9 @@ class IncidentsClient:
         if notes:
             payload["notes"] = notes
         return self._client.retry.run(
-            lambda: self._client.transport.request("POST", f"/incidents/{incident_id}/assign", json=payload)
+            lambda: self._client.transport.request(
+                "POST", f"/incidents/{incident_id}/assign", json=payload
+            )
         )
 
     def resolve(
@@ -228,11 +237,15 @@ class IncidentsClient:
     ) -> dict[str, Any]:
         """Mark an incident as resolved."""
         return self._client.retry.run(
-            lambda: self._client.transport.request("POST", f"/incidents/{incident_id}/resolve", json={
-                "resolution_summary": summary,
-                "root_cause": root_cause,
-                "remediation_actions": remediation_actions,
-            })
+            lambda: self._client.transport.request(
+                "POST",
+                f"/incidents/{incident_id}/resolve",
+                json={
+                    "resolution_summary": summary,
+                    "root_cause": root_cause,
+                    "remediation_actions": remediation_actions,
+                },
+            )
         )
 
     def close(
@@ -244,22 +257,30 @@ class IncidentsClient:
     ) -> dict[str, Any]:
         """Close an incident."""
         return self._client.retry.run(
-            lambda: self._client.transport.request("POST", f"/incidents/{incident_id}/close", json={
-                "closure_notes": notes,
-                "approval_status": approval_status,
-            })
+            lambda: self._client.transport.request(
+                "POST",
+                f"/incidents/{incident_id}/close",
+                json={
+                    "closure_notes": notes,
+                    "approval_status": approval_status,
+                },
+            )
         )
 
     def report(self, incident_id: str) -> dict[str, Any]:
         """Generate the investigation report for an incident."""
         return self._client.retry.run(
-            lambda: self._client.transport.request("POST", f"/incidents/{incident_id}/report", json={})
+            lambda: self._client.transport.request(
+                "POST", f"/incidents/{incident_id}/report", json={}
+            )
         )
 
     def get_report(self, incident_id: str) -> dict[str, Any]:
         """Retrieve a previously generated investigation report."""
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/incidents/{incident_id}/report")
+            lambda: self._client.transport.request(
+                "GET", f"/incidents/{incident_id}/report"
+            )
         )
 
     def annotate(
@@ -274,13 +295,17 @@ class IncidentsClient:
         if author:
             payload["author"] = author
         return self._client.retry.run(
-            lambda: self._client.transport.request("POST", f"/incidents/{incident_id}/annotations", json=payload)
+            lambda: self._client.transport.request(
+                "POST", f"/incidents/{incident_id}/annotations", json=payload
+            )
         )
 
     def annotations(self, incident_id: str) -> list[dict[str, Any]]:
         """Return all annotations on an incident."""
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/incidents/{incident_id}/annotations")
+            lambda: self._client.transport.request(
+                "GET", f"/incidents/{incident_id}/annotations"
+            )
         )
 
     def add_workspace_item(
@@ -296,11 +321,15 @@ class IncidentsClient:
         if label:
             payload["label"] = label
         return self._client.retry.run(
-            lambda: self._client.transport.request("POST", f"/incidents/{incident_id}/workspace", json=payload)
+            lambda: self._client.transport.request(
+                "POST", f"/incidents/{incident_id}/workspace", json=payload
+            )
         )
 
     def workspace_items(self, incident_id: str) -> list[dict[str, Any]]:
         """Return workspace items pinned to an incident."""
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/incidents/{incident_id}/workspace")
+            lambda: self._client.transport.request(
+                "GET", f"/incidents/{incident_id}/workspace"
+            )
         )

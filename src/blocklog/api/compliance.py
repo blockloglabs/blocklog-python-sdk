@@ -14,6 +14,7 @@ Backend endpoints
 - POST  /api/v1/compliance/reports/{id}/share
 - GET   /api/v1/compliance/reports/{id}/export
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -36,7 +37,7 @@ class ComplianceClient:
     >>> share_url = client.compliance.share(report["id"], expires_in=86400)
     """
 
-    def __init__(self, client: "BlocklogClient") -> None:
+    def __init__(self, client: BlocklogClient) -> None:
         self._client = client
 
     def generate(
@@ -82,13 +83,17 @@ class ComplianceClient:
             payload["metadata"] = metadata
 
         return self._client.retry.run(
-            lambda: self._client.transport.request("POST", "/compliance/reports", json=payload)
+            lambda: self._client.transport.request(
+                "POST", "/compliance/reports", json=payload
+            )
         )
 
     def get(self, report_id: str) -> dict[str, Any]:
         """Fetch a compliance report by ID."""
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/compliance/reports/{report_id}")
+            lambda: self._client.transport.request(
+                "GET", f"/compliance/reports/{report_id}"
+            )
         )
 
     def list(self) -> list[dict[str, Any]]:
@@ -134,7 +139,9 @@ class ComplianceClient:
             payload["recipient_email"] = recipient_email
 
         return self._client.retry.run(
-            lambda: self._client.transport.request("POST", f"/compliance/reports/{report_id}/share", json=payload)
+            lambda: self._client.transport.request(
+                "POST", f"/compliance/reports/{report_id}/share", json=payload
+            )
         )
 
     def export(

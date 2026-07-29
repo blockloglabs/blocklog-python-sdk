@@ -8,6 +8,7 @@ from uuid import UUID
 try:
     from langchain_core.callbacks import BaseCallbackHandler
 except ImportError:  # pragma: no cover - allow use without langchain installed
+
     class BaseCallbackHandler:  # type: ignore[no-redef]
         """Fallback no-op base so this module is importable without langchain_core."""
 
@@ -50,7 +51,15 @@ class BlocklogLangChainCallbackHandler(BaseCallbackHandler):
 
     # ---------- chain ----------
 
-    def on_chain_start(self, serialized: dict[str, Any], inputs: dict[str, Any], *, run_id=None, parent_run_id=None, **kwargs):
+    def on_chain_start(
+        self,
+        serialized: dict[str, Any],
+        inputs: dict[str, Any],
+        *,
+        run_id=None,
+        parent_run_id=None,
+        **kwargs,
+    ):
         self._run_id_stack[parent_run_id] = run_id
         self._emit(
             "agent.chain.started",
@@ -59,10 +68,15 @@ class BlocklogLangChainCallbackHandler(BaseCallbackHandler):
             parent_run_id=parent_run_id,
             causality_type="chain_start",
             metadata=kwargs.get("metadata"),
-            context={"input_keys": sorted(inputs.keys()), "context_fetched_at": _utc_now()},
+            context={
+                "input_keys": sorted(inputs.keys()),
+                "context_fetched_at": _utc_now(),
+            },
         )
 
-    def on_chain_end(self, outputs: dict[str, Any], *, run_id=None, parent_run_id=None, **kwargs):
+    def on_chain_end(
+        self, outputs: dict[str, Any], *, run_id=None, parent_run_id=None, **kwargs
+    ):
         self._emit(
             "agent.chain.completed",
             {"outputs": outputs},
@@ -73,7 +87,9 @@ class BlocklogLangChainCallbackHandler(BaseCallbackHandler):
         )
         self._run_id_stack.pop(parent_run_id, None)
 
-    def on_chain_error(self, error: BaseException, *, run_id=None, parent_run_id=None, **kwargs):
+    def on_chain_error(
+        self, error: BaseException, *, run_id=None, parent_run_id=None, **kwargs
+    ):
         self._emit(
             "agent.chain.errored",
             _error_payload(error),
@@ -86,7 +102,15 @@ class BlocklogLangChainCallbackHandler(BaseCallbackHandler):
 
     # ---------- llm ----------
 
-    def on_llm_start(self, serialized: dict[str, Any], prompts: Sequence[str], *, run_id=None, parent_run_id=None, **kwargs):
+    def on_llm_start(
+        self,
+        serialized: dict[str, Any],
+        prompts: Sequence[str],
+        *,
+        run_id=None,
+        parent_run_id=None,
+        **kwargs,
+    ):
         self._emit(
             "agent.model.started",
             {"serialized": serialized, "prompts": list(prompts)},
@@ -107,7 +131,9 @@ class BlocklogLangChainCallbackHandler(BaseCallbackHandler):
             metadata=kwargs.get("metadata"),
         )
 
-    def on_llm_error(self, error: BaseException, *, run_id=None, parent_run_id=None, **kwargs):
+    def on_llm_error(
+        self, error: BaseException, *, run_id=None, parent_run_id=None, **kwargs
+    ):
         self._emit(
             "agent.model.errored",
             _error_payload(error),
@@ -119,7 +145,15 @@ class BlocklogLangChainCallbackHandler(BaseCallbackHandler):
 
     # ---------- tool ----------
 
-    def on_tool_start(self, serialized: dict[str, Any], input_str: str, *, run_id=None, parent_run_id=None, **kwargs):
+    def on_tool_start(
+        self,
+        serialized: dict[str, Any],
+        input_str: str,
+        *,
+        run_id=None,
+        parent_run_id=None,
+        **kwargs,
+    ):
         self._emit(
             "agent.tool.started",
             {"serialized": serialized, "input": input_str},
@@ -140,7 +174,9 @@ class BlocklogLangChainCallbackHandler(BaseCallbackHandler):
             metadata=kwargs.get("metadata"),
         )
 
-    def on_tool_error(self, error: BaseException, *, run_id=None, parent_run_id=None, **kwargs):
+    def on_tool_error(
+        self, error: BaseException, *, run_id=None, parent_run_id=None, **kwargs
+    ):
         self._emit(
             "agent.tool.errored",
             _error_payload(error),
@@ -176,7 +212,13 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _agent_metadata(*, framework: str, parent_run_id=None, extra: dict[str, Any] | None = None, context: dict[str, Any] | None = None) -> dict[str, Any]:
+def _agent_metadata(
+    *,
+    framework: str,
+    parent_run_id=None,
+    extra: dict[str, Any] | None = None,
+    context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     metadata = {
         "framework": framework,
         "captured_at": _utc_now(),

@@ -8,6 +8,7 @@ from uuid import UUID
 try:
     from langchain_core.callbacks import BaseCallbackHandler
 except ImportError:  # pragma: no cover
+
     class BaseCallbackHandler:  # type: ignore[no-redef]
         """Fallback no-op base so this module is importable without langchain_core."""
 
@@ -473,6 +474,7 @@ class BlocklogLangGraphCallbackHandler(BaseCallbackHandler):
 # Public factory                                                      #
 # ------------------------------------------------------------------ #
 
+
 def instrument_langgraph(client) -> BlocklogLangGraphCallbackHandler:
     """Return a configured :class:`BlocklogLangGraphCallbackHandler`.
 
@@ -487,6 +489,7 @@ def instrument_langgraph(client) -> BlocklogLangGraphCallbackHandler:
 # ------------------------------------------------------------------ #
 # Private utilities                                                   #
 # ------------------------------------------------------------------ #
+
 
 def _graph_name(serialized: dict[str, Any]) -> str:
     """Extract a human-readable graph name from LangGraph's serialized dict."""

@@ -1,6 +1,9 @@
 from contextlib import contextmanager
+
 from blocklog.models.events import SessionContext
-from .vars import set_context, get_context
+
+from .vars import get_context, set_context
+
 
 @contextmanager
 def agent_session(*, agent_id=None, source="python-sdk", workflow_id=None):

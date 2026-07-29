@@ -19,14 +19,16 @@ Usage::
     def fetch_price(ticker: str) -> float:
         ...
 """
+
 from __future__ import annotations
 
 import functools
 import inspect
 import logging
 import traceback as _traceback
+from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 logger = logging.getLogger("blocklog")
 
@@ -75,6 +77,7 @@ def tool(
     metadata:
         Arbitrary extra data stored with each tool call event.
     """
+
     def decorator(fn: F) -> F:
         tool_name = name or fn.__name__
         tool_meta = {
@@ -105,60 +108,77 @@ def tool(
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-def _run_sync(fn: Callable, args: tuple, kwargs: dict, tool_name: str, meta: dict) -> Any:
+
+def _run_sync(
+    fn: Callable, args: tuple, kwargs: dict, tool_name: str, meta: dict
+) -> Any:
     started_at = _now()
     call_args = _safe_args(fn, args, kwargs)
     logger.debug("Tool call started: tool_name=%s", tool_name)
     try:
         result = fn(*args, **kwargs)
-        _emit("TOOL_CALL", {
-            **meta,
-            "inputs": call_args,
-            "output": _safe_repr(result),
-            "duration_ms": _elapsed_ms(started_at),
-            "status": "ok",
-        })
+        _emit(
+            "TOOL_CALL",
+            {
+                **meta,
+                "inputs": call_args,
+                "output": _safe_repr(result),
+                "duration_ms": _elapsed_ms(started_at),
+                "status": "ok",
+            },
+        )
         logger.debug("Tool call completed: tool_name=%s, status=ok", tool_name)
         return result
     except BaseException as exc:
-        _emit("TOOL_CALL", {
-            **meta,
-            "inputs": call_args,
-            "error_type": type(exc).__name__,
-            "error_message": str(exc),
-            "traceback": _traceback.format_exc(),
-            "duration_ms": _elapsed_ms(started_at),
-            "status": "error",
-        })
+        _emit(
+            "TOOL_CALL",
+            {
+                **meta,
+                "inputs": call_args,
+                "error_type": type(exc).__name__,
+                "error_message": str(exc),
+                "traceback": _traceback.format_exc(),
+                "duration_ms": _elapsed_ms(started_at),
+                "status": "error",
+            },
+        )
         logger.debug("Tool call completed: tool_name=%s, status=error", tool_name)
         raise
 
 
-async def _run_async(fn: Callable, args: tuple, kwargs: dict, tool_name: str, meta: dict) -> Any:
+async def _run_async(
+    fn: Callable, args: tuple, kwargs: dict, tool_name: str, meta: dict
+) -> Any:
     started_at = _now()
     call_args = _safe_args(fn, args, kwargs)
     logger.debug("Tool call started: tool_name=%s", tool_name)
     try:
         result = await fn(*args, **kwargs)
-        _emit("TOOL_CALL", {
-            **meta,
-            "inputs": call_args,
-            "output": _safe_repr(result),
-            "duration_ms": _elapsed_ms(started_at),
-            "status": "ok",
-        })
+        _emit(
+            "TOOL_CALL",
+            {
+                **meta,
+                "inputs": call_args,
+                "output": _safe_repr(result),
+                "duration_ms": _elapsed_ms(started_at),
+                "status": "ok",
+            },
+        )
         logger.debug("Tool call completed: tool_name=%s, status=ok", tool_name)
         return result
     except BaseException as exc:
-        _emit("TOOL_CALL", {
-            **meta,
-            "inputs": call_args,
-            "error_type": type(exc).__name__,
-            "error_message": str(exc),
-            "traceback": _traceback.format_exc(),
-            "duration_ms": _elapsed_ms(started_at),
-            "status": "error",
-        })
+        _emit(
+            "TOOL_CALL",
+            {
+                **meta,
+                "inputs": call_args,
+                "error_type": type(exc).__name__,
+                "error_message": str(exc),
+                "traceback": _traceback.format_exc(),
+                "duration_ms": _elapsed_ms(started_at),
+                "status": "error",
+            },
+        )
         logger.debug("Tool call completed: tool_name=%s, status=error", tool_name)
         raise
 
@@ -167,6 +187,7 @@ def _emit(event_type: str, payload: dict) -> None:
     try:
         from blocklog._global import get_client
         from blocklog.context.vars import get_context
+
         ctx = get_context()
         client = get_client()
         client.event(

@@ -7,6 +7,7 @@ from typing import Any
 try:
     from litellm.integrations.custom_logger import CustomLogger
 except ImportError:  # pragma: no cover - allow use without litellm installed
+
     class CustomLogger:  # type: ignore[no-redef]
         """Fallback no-op base so this module is importable without litellm."""
 
@@ -65,10 +66,7 @@ class BlocklogLiteLLMCallbackHandler(CustomLogger):
         back to a fresh UUID only if neither is present so span continuity is
         preserved across pre/post/success hooks for the same request.
         """
-        call_id = (
-            kwargs.get("litellm_call_id")
-            or kwargs.get("id")
-        )
+        call_id = kwargs.get("litellm_call_id") or kwargs.get("id")
         return str(call_id) if call_id else str(uuid.uuid4())
 
     def _base_request_payload(self, kwargs: dict[str, Any]) -> dict[str, Any]:
@@ -99,12 +97,13 @@ class BlocklogLiteLLMCallbackHandler(CustomLogger):
 
     def _duration_s(self, start_time: Any, end_time: Any) -> float | None:
         """Return elapsed seconds, handling datetime objects and None."""
+        if start_time is None or end_time is None:
+            return None
+
         try:
-            if start_time is None or end_time is None:
-                return None
             delta = end_time - start_time
             return delta.total_seconds()
-        except Exception:
+        except (TypeError, AttributeError, ValueError):
             return None
 
     # ------------------------------------------------------------------ #
@@ -231,7 +230,9 @@ class BlocklogLiteLLMCallbackHandler(CustomLogger):
                 "usage": usage,
                 "response_cost": response_cost,
                 "duration_s": self._duration_s(start_time, end_time),
-                "end_time": end_time.isoformat() if hasattr(end_time, "isoformat") else str(end_time),
+                "end_time": end_time.isoformat()
+                if hasattr(end_time, "isoformat")
+                else str(end_time),
             },
             causality_type="llm_end",
             span_id=span_id,
@@ -293,7 +294,10 @@ class BlocklogLiteLLMCallbackHandler(CustomLogger):
 # Public factory                                                      #
 # ------------------------------------------------------------------ #
 
-def instrument_litellm(client, *, source: str = "litellm") -> BlocklogLiteLLMCallbackHandler:
+
+def instrument_litellm(
+    client, *, source: str = "litellm"
+) -> BlocklogLiteLLMCallbackHandler:
     """Return a configured :class:`BlocklogLiteLLMCallbackHandler`.
 
     Register the returned handler before making any litellm calls::
@@ -314,6 +318,7 @@ def instrument_litellm(client, *, source: str = "litellm") -> BlocklogLiteLLMCal
 # ------------------------------------------------------------------ #
 # Private utilities                                                   #
 # ------------------------------------------------------------------ #
+
 
 def _safe_model_dump(value: Any) -> Any:
     """Safely serialise LiteLLM response objects (Pydantic v1 + v2)."""

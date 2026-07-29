@@ -10,6 +10,7 @@ If you need direct access to the low-level client for async operations (like man
 from blocklog.async_client import AsyncBlocklogClient
 from blocklog.config import BlocklogConfig
 
+
 async def setup():
     config = BlocklogConfig(api_key="blk_...")
     client = AsyncBlocklogClient(config)
@@ -26,22 +27,25 @@ import blocklog
 
 blocklog.init()
 
+
 @blocklog.tool
 async def fetch_async_data(url: str) -> dict:
     # Simulate async network request
     await asyncio.sleep(0.5)
     return {"status": 200, "data": "async payload"}
 
+
 @blocklog.agent(name="async-agent")
 async def main_agent():
     data = await fetch_async_data("https://api.example.com")
-    
+
     # Decisions work perfectly within async contexts
     with blocklog.decision(type="EVALUATE", asset="url") as d:
         d.record_input(data=data)
         d.record_output(valid=True)
-        
+
     return data
+
 
 if __name__ == "__main__":
     asyncio.run(main_agent())

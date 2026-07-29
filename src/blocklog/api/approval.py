@@ -14,6 +14,7 @@ Backend endpoints
 - GET   /api/v1/hitl/overrides/{id}
 - GET   /api/v1/hitl/audit-trail
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -36,7 +37,7 @@ class ApprovalClient:
     ... )
     """
 
-    def __init__(self, client: "BlocklogClient") -> None:
+    def __init__(self, client: BlocklogClient) -> None:
         self._client = client
 
     def request(
@@ -139,11 +140,15 @@ class ApprovalClient:
             Explanation for the escalation.
         """
         return self._client.retry.run(
-            lambda: self._client.transport.request("POST", "/hitl/escalate", json={
-                "current_reviewer": from_reviewer,
-                "escalation_target": to_reviewer,
-                "escalation_reason": reason,
-            })
+            lambda: self._client.transport.request(
+                "POST",
+                "/hitl/escalate",
+                json={
+                    "current_reviewer": from_reviewer,
+                    "escalation_target": to_reviewer,
+                    "escalation_reason": reason,
+                },
+            )
         )
 
     def list_overrides(self) -> list[dict[str, Any]]:
@@ -167,7 +172,9 @@ class ApprovalClient:
             Integer ID of the override.
         """
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/hitl/overrides/{override_id}")
+            lambda: self._client.transport.request(
+                "GET", f"/hitl/overrides/{override_id}"
+            )
         )
 
     def audit_trail(self) -> list[dict[str, Any]]:

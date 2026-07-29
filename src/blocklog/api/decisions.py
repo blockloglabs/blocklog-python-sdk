@@ -16,6 +16,7 @@ Backend endpoints
 - GET    /api/v1/decisions/{id}/evidence
 - GET    /api/v1/decisions/{id}/replay
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -39,7 +40,7 @@ class DecisionsClient:
     >>> client.decisions.timeline(decision["id"])
     """
 
-    def __init__(self, client: "BlocklogClient") -> None:
+    def __init__(self, client: BlocklogClient) -> None:
         self._client = client
 
     def create(
@@ -65,7 +66,7 @@ class DecisionsClient:
         workflow_id: str | None = None,
         approval_references: list | dict | None = None,
         signatures: list | dict | None = None,
-        ) -> dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a new AI Decision record."""
 
         payload: dict[str, Any] = {
@@ -95,11 +96,7 @@ class DecisionsClient:
         }
 
         payload.update(
-            {
-                key: value
-                for key, value in optional_fields.items()
-                if value is not None
-            }
+            {key: value for key, value in optional_fields.items() if value is not None}
         )
 
         return self._client.retry.run(
@@ -109,7 +106,6 @@ class DecisionsClient:
                 json=payload,
             )
         )
-
 
     def list(self) -> list[dict[str, Any]]:
         """List all decisions for the authenticated company.
@@ -150,7 +146,9 @@ class DecisionsClient:
             details.
         """
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/decisions/{decision_id}/verify")
+            lambda: self._client.transport.request(
+                "GET", f"/decisions/{decision_id}/verify"
+            )
         )
 
     def timeline(self, decision_id: str) -> list[dict[str, Any]]:
@@ -162,7 +160,9 @@ class DecisionsClient:
             UUID of the decision.
         """
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/decisions/{decision_id}/timeline")
+            lambda: self._client.transport.request(
+                "GET", f"/decisions/{decision_id}/timeline"
+            )
         )
 
     def evidence(self, decision_id: str) -> dict[str, Any]:
@@ -174,7 +174,9 @@ class DecisionsClient:
             UUID of the decision.
         """
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/decisions/{decision_id}/evidence")
+            lambda: self._client.transport.request(
+                "GET", f"/decisions/{decision_id}/evidence"
+            )
         )
 
     def replay(self, decision_id: str) -> dict[str, Any]:
@@ -188,5 +190,7 @@ class DecisionsClient:
             UUID of the decision.
         """
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/decisions/{decision_id}/replay")
+            lambda: self._client.transport.request(
+                "GET", f"/decisions/{decision_id}/replay"
+            )
         )

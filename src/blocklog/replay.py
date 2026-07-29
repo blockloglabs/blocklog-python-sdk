@@ -21,6 +21,7 @@ Usage (Layer 1)::
     # Compare against another run
     diff = session.compare(other_trace_id="trace-def-456")
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -34,7 +35,7 @@ def replay(
     *,
     token_id: str | None = None,
     metadata: dict[str, Any] | None = None,
-) -> "ReplaySession":
+) -> ReplaySession:
     """Create a forensic replay session for a trace.
 
     Parameters
@@ -61,4 +62,7 @@ def replay(
     >>> print(cause["description"])
     """
     from blocklog._global import get_client
-    return get_client().replay.create(trace_id=trace_id, token_id=token_id, metadata=metadata)
+
+    return get_client().replay.create(
+        trace_id=trace_id, token_id=token_id, metadata=metadata
+    )

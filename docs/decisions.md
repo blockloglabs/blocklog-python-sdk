@@ -19,11 +19,7 @@ with blocklog.decision(type="BUY", asset="TSLA", confidence=0.87) as d:
 Before your agent or model makes its final determination, you should record the inputs it considered. This makes root-cause analysis significantly easier.
 
 ```python
-d.record_input(
-    price=412.50, 
-    volume=1_200_000, 
-    signal="rsi_oversold"
-)
+d.record_input(price=412.50, volume=1_200_000, signal="rsi_oversold")
 ```
 
 ## Outputs
@@ -31,11 +27,7 @@ d.record_input(
 Once the model produces a result, record it as an output.
 
 ```python
-d.record_output(
-    order_id="ord_88", 
-    filled_at=413.10, 
-    qty=100
-)
+d.record_output(order_id="ord_88", filled_at=413.10, qty=100)
 ```
 
 ## Context Management
@@ -54,8 +46,7 @@ You can seamlessly request human approval for high-risk decisions. The `request_
 ```python
 if order_value > 500_000:
     d.request_approval(
-        reason="Trade exceeds $500k threshold",
-        reviewer="risk-team@fund.com"
+        reason="Trade exceeds $500k threshold", reviewer="risk-team@fund.com"
     )
 ```
 

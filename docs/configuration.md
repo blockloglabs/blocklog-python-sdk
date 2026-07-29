@@ -15,7 +15,7 @@ blocklog.init(
     signing_key="ed25519_private_key_here",
     timeout=5.0,
     max_retries=5,
-    debug=True
+    debug=True,
 )
 ```
 

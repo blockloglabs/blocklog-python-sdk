@@ -57,6 +57,7 @@ result = graph.invoke(state, config={"callbacks": [handler]})
 
 # Or via RunnableConfig
 from langchain_core.runnables import RunnableConfig
+
 result = graph.invoke(state, config=RunnableConfig(callbacks=[handler]))
 ```
 

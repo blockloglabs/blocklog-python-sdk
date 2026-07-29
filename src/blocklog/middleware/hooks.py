@@ -1,6 +1,5 @@
 from collections.abc import Callable
 
-
 Hook = Callable[[dict], dict]
 
 

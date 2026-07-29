@@ -23,7 +23,9 @@ class AsyncBlocklogClient(BlocklogClient):
 
     async def event(self, event_type: str, payload: dict, **kwargs) -> IngestResponse:
         envelope = self._build_event(event_type=event_type, payload=payload, **kwargs)
-        result = await self.transport.request("POST", "/logs", json=self._serialize(envelope))
+        result = await self.transport.request(
+            "POST", "/logs", json=self._serialize(envelope)
+        )
         return IngestResponse.model_validate(result)
 
     async def flush(self, *, batch=None):

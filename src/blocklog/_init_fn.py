@@ -11,9 +11,12 @@ Usage::
     # or via environment variable BLOCKLOG_API_KEY
     blocklog.init()
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
+
+from blocklog.exceptions import AuthenticationError, AuthorizationError, BlocklogAuthError, TransportError
 
 if TYPE_CHECKING:
     from blocklog.client import BlocklogClient
@@ -27,7 +30,7 @@ def init(
     timeout: float | None = None,
     max_retries: int | None = None,
     debug: bool = False,
-) -> "BlocklogClient":
+) -> BlocklogClient:
     """Initialise the Blocklog SDK.
 
     Call once at application startup — typically right after your other
@@ -88,6 +91,7 @@ def init(
 
     if debug:
         import logging
+
         logging.basicConfig(level=logging.DEBUG)
         logging.getLogger("blocklog").setLevel(logging.DEBUG)
 
@@ -97,29 +101,9 @@ def init(
 
 
 def health() -> dict[str, Any]:
-    """Perform a health check on the Blocklog SDK and API connection.
-
-    Checks if the API is reachable, if the configured API key is valid,
-    if a signing key is loaded, and reports the context backend and SDK version.
-
-    Returns
-    -------
-    dict
-        A dictionary containing the health status fields:
-        - api_reachable (bool)
-        - auth_valid (bool)
-        - signing_key_loaded (bool)
-        - context_backend (str)
-        - sdk_version (str)
-
-    Raises
-    ------
-    BlocklogAuthError
-        If the API key is not configured or is invalid.
-    """
-    from blocklog._global import get_client
-    from blocklog.exceptions import BlocklogAuthError
+    """Perform a health check on the Blocklog SDK and API connection."""
     from blocklog import __version__
+    from blocklog._global import get_client
 
     client = get_client()
 
@@ -137,37 +121,26 @@ def health() -> dict[str, Any]:
             "or set the BLOCKLOG_API_KEY environment variable."
         )
 
-    # Check API reachability via unauthenticated GET /health
+    # Check API reachability
     try:
         client.transport.request("GET", "/health")
         api_reachable = True
-    except Exception as exc:
-        status_code = None
-        if hasattr(exc, "response") and exc.response is not None:
-            status_code = getattr(exc.response, "status_code", None)
-        if status_code in (401, 403):
-            api_reachable = True
-        else:
-            api_reachable = False
+    except TransportError:
+        api_reachable = False
+    except (AuthenticationError, AuthorizationError):
+        # Server is reachable but credentials are invalid
+        api_reachable = True
 
-    # Check authentication validity via decisions list (authenticated endpoint)
+    # Check authentication validity
     try:
         client.decisions.list()
         auth_valid = True
         api_reachable = True
-    except Exception as exc:
-        status_code = None
-        if hasattr(exc, "response") and exc.response is not None:
-            status_code = getattr(exc.response, "status_code", None)
-
-        if status_code in (401, 403):
-            auth_valid = False
-            api_reachable = True
-        elif status_code is not None:
-            api_reachable = True
-            auth_valid = True
-        else:
-            auth_valid = False
+    except (AuthenticationError, AuthorizationError):
+        auth_valid = False
+        api_reachable = True
+    except TransportError:
+        auth_valid = False
 
     if not auth_valid:
         raise BlocklogAuthError(

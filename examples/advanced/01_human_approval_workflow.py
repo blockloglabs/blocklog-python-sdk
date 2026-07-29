@@ -12,15 +12,16 @@ Demonstrates how to gate AI decisions on human approval:
 Run:
     BLOCKLOG_API_KEY=blk_... python 03_human_approval_workflow.py
 """
+
 import os
-import time
 import random
+import time
 
 import blocklog
 
 blocklog.init(api_key=os.environ.get("BLOCKLOG_API_KEY", "blk_demo_key"))
 
-APPROVAL_THRESHOLD = 5_000   # trades above this need human sign-off
+APPROVAL_THRESHOLD = 5_000  # trades above this need human sign-off
 
 
 @blocklog.tool(name="fetch-price")
@@ -45,7 +46,9 @@ def propose_trade(ticker: str, qty: int) -> dict:
         d.tag("large-value")
 
         if value > APPROVAL_THRESHOLD:
-            print(f"\n  ⚠️  Trade value ${value:,.2f} exceeds ${APPROVAL_THRESHOLD:,} threshold")
+            print(
+                f"\n  ⚠️  Trade value ${value:,.2f} exceeds ${APPROVAL_THRESHOLD:,} threshold"
+            )
             print("  → Requesting human approval (non-blocking)...")
 
             # This fires the approval request and returns immediately.
@@ -55,7 +58,9 @@ def propose_trade(ticker: str, qty: int) -> dict:
                 reviewer="risk-officer@fund.com",
             )
 
-        d.record_output(status="pending_approval" if value > APPROVAL_THRESHOLD else "auto_approved")
+        d.record_output(
+            status="pending_approval" if value > APPROVAL_THRESHOLD else "auto_approved"
+        )
         decision_id = d.id
 
     return {"decision_id": decision_id, "ticker": ticker, "qty": qty, "value": value}
@@ -116,9 +121,11 @@ def simulate_approval_workflow(decision_id: str) -> None:
         trail = blocklog.approval.audit_trail()
         if trail:
             for entry in trail[:3]:
-                print(f"  [{entry.get('action','?').upper()}]"
-                      f"  reviewer={entry.get('reviewer','?')}"
-                      f"  ts={entry.get('timestamp','?')}")
+                print(
+                    f"  [{entry.get('action', '?').upper()}]"
+                    f"  reviewer={entry.get('reviewer', '?')}"
+                    f"  ts={entry.get('timestamp', '?')}"
+                )
         else:
             print("  (no audit events yet — check dashboard)")
     except Exception as e:

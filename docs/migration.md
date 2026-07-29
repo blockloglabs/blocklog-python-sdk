@@ -9,6 +9,7 @@ If you already have a mature AI application, integrating Blocklog requires minim
 def my_custom_tool(data: str) -> str:
     return "Processed " + data
 
+
 def main_agent(input_data: str):
     print("Starting agent")
     result = my_custom_tool(input_data)
@@ -19,21 +20,24 @@ def main_agent(input_data: str):
 **After (With Blocklog):**
 ```python
 import blocklog
+
 blocklog.init(api_key="blk_...")
+
 
 @blocklog.tool
 def my_custom_tool(data: str) -> str:
     return "Processed " + data
 
+
 @blocklog.agent(name="main_agent")
 def main_agent(input_data: str):
     print("Starting agent")
     result = my_custom_tool(input_data)
-    
+
     with blocklog.decision(type="PROCESS", asset="data") as d:
         d.record_input(data=input_data)
         d.record_output(result=result)
-        
+
     print("Done")
     return result
 ```
@@ -59,7 +63,7 @@ from langchain.llms import OpenAI
 from langchain.chains import LLMChain
 
 client = blocklog.init(api_key="blk_...")
-client.instrument_langchain() # Automatically adds BlocklogLangChainCallbackHandler
+client.instrument_langchain()  # Automatically adds BlocklogLangChainCallbackHandler
 
 llm = OpenAI(temperature=0.9)
 chain = LLMChain(llm=llm, prompt=prompt)

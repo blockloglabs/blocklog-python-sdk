@@ -15,6 +15,7 @@ Run:
     BLOCKLOG_API_KEY=blk_... python 05_decision_comparison.py
     BLOCKLOG_API_KEY=blk_... BASELINE_TRACE=<id> CANDIDATE_TRACE=<id> python 05_decision_comparison.py
 """
+
 import os
 import random
 
@@ -24,6 +25,7 @@ blocklog.init(api_key=os.environ.get("BLOCKLOG_API_KEY", "blk_demo_key"))
 
 
 # ── Define a configurable trading agent ────────────────────────────────────────
+
 
 def make_agent(model_name: str, bias: float):
     """Factory that creates a named trading agent with a given model bias."""
@@ -44,7 +46,7 @@ def make_agent(model_name: str, bias: float):
         tags=["ab-test", model_name],
     )
     def run(ticker: str = "TSLA") -> dict:
-        price  = fetch_price(ticker)
+        price = fetch_price(ticker)
         result = compute_signal(price, bias)
 
         with blocklog.decision(
@@ -58,8 +60,10 @@ def make_agent(model_name: str, bias: float):
             d.tag("ab-test", model_name)
             decision_id = d.id
 
-        print(f"  [{model_name}] price={price} signal={result['signal']} "
-              f"score={result['score']} decision={decision_id}")
+        print(
+            f"  [{model_name}] price={price} signal={result['signal']} "
+            f"score={result['score']} decision={decision_id}"
+        )
 
         return {
             "decision_id": decision_id,
@@ -72,7 +76,7 @@ def make_agent(model_name: str, bias: float):
 
 
 def compare_runs(baseline_trace: str, candidate_trace: str) -> None:
-    print(f"\n  Comparing replays:")
+    print("\n  Comparing replays:")
     print(f"    Baseline  : {baseline_trace}")
     print(f"    Candidate : {candidate_trace}")
     print()
@@ -93,9 +97,9 @@ def compare_runs(baseline_trace: str, candidate_trace: str) -> None:
             for diff in differences:
                 dtype = diff.get("type", "?")
                 field = diff.get("field", "?")
-                bval  = diff.get("baseline_value", "?")
-                cval  = diff.get("candidate_value", "?")
-                desc  = diff.get("description", "")
+                bval = diff.get("baseline_value", "?")
+                cval = diff.get("candidate_value", "?")
+                desc = diff.get("description", "")
                 print(f"    [{dtype}] {field}")
                 print(f"      baseline  → {bval}")
                 print(f"      candidate → {cval}")
@@ -126,12 +130,14 @@ if __name__ == "__main__":
     print()
 
     # Allow pre-specified trace IDs via env vars (for comparing real runs)
-    baseline_trace  = os.environ.get("BASELINE_TRACE")
+    baseline_trace = os.environ.get("BASELINE_TRACE")
     candidate_trace = os.environ.get("CANDIDATE_TRACE")
 
     if not baseline_trace or not candidate_trace:
         print("  Running both models to generate fresh traces...")
-        print("  (set BASELINE_TRACE and CANDIDATE_TRACE env vars to compare existing traces)")
+        print(
+            "  (set BASELINE_TRACE and CANDIDATE_TRACE env vars to compare existing traces)"
+        )
         print()
 
         # Model v1 — slight bearish bias
@@ -148,7 +154,7 @@ if __name__ == "__main__":
 
         # Note: for a real comparison we'd use the trace IDs from the
         # agent sessions. In demo mode we use the decision IDs as placeholders.
-        baseline_trace  = f"trace-from-decision-{v1_result['decision_id']}"
+        baseline_trace = f"trace-from-decision-{v1_result['decision_id']}"
         candidate_trace = f"trace-from-decision-{v2_result['decision_id']}"
 
     compare_runs(baseline_trace, candidate_trace)

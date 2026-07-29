@@ -4,14 +4,15 @@ import contextvars
 import inspect
 import time
 import uuid
+from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import Any, Callable
+from typing import Any
 
 # In-process contextvar for linking a streamed/nested OpenAI call to whatever
 # Blocklog span is "current" when it starts. This is separate from
 # blocklog.context.vars (which carries trace_id/session_id/workflow_id) —
 # this one only tracks span_id parentage for causality_type chains.
-_current_span_id: "contextvars.ContextVar[uuid.UUID | None]" = contextvars.ContextVar(
+_current_span_id: contextvars.ContextVar[uuid.UUID | None] = contextvars.ContextVar(
     "blocklog_openai_span_id", default=None
 )
 
@@ -45,7 +46,9 @@ class BlocklogOpenAIInstrumentation:
             from openai.resources.chat.completions import AsyncCompletions, Completions
 
             self._patch_class_method(Completions, "create", event_prefix="agent.model")
-            self._patch_class_method(AsyncCompletions, "create", event_prefix="agent.model")
+            self._patch_class_method(
+                AsyncCompletions, "create", event_prefix="agent.model"
+            )
             patched_any = True
         except ImportError:
             pass
@@ -54,7 +57,9 @@ class BlocklogOpenAIInstrumentation:
             from openai.resources.responses import AsyncResponses, Responses
 
             self._patch_class_method(Responses, "create", event_prefix="agent.model")
-            self._patch_class_method(AsyncResponses, "create", event_prefix="agent.model")
+            self._patch_class_method(
+                AsyncResponses, "create", event_prefix="agent.model"
+            )
             patched_any = True
         except ImportError:
             pass
@@ -71,13 +76,19 @@ class BlocklogOpenAIInstrumentation:
         log calls made through one client but not another). Returns the
         same instance for chaining.
         """
-        self._patch_instance_endpoint(openai_client, ("chat", "completions"), event_prefix="agent.model")
-        self._patch_instance_endpoint(openai_client, ("responses",), event_prefix="agent.model")
+        self._patch_instance_endpoint(
+            openai_client, ("chat", "completions"), event_prefix="agent.model"
+        )
+        self._patch_instance_endpoint(
+            openai_client, ("responses",), event_prefix="agent.model"
+        )
         return openai_client
 
     # ---------- patching: class-level (global) ----------
 
-    def _patch_class_method(self, cls: type, method_name: str, *, event_prefix: str) -> None:
+    def _patch_class_method(
+        self, cls: type, method_name: str, *, event_prefix: str
+    ) -> None:
         original = getattr(cls, method_name, None)
         if original is None:
             return
@@ -94,7 +105,9 @@ class BlocklogOpenAIInstrumentation:
 
     # ---------- patching: instance-level (scoped) ----------
 
-    def _patch_instance_endpoint(self, openai_client: Any, path: tuple[str, ...], *, event_prefix: str) -> None:
+    def _patch_instance_endpoint(
+        self, openai_client: Any, path: tuple[str, ...], *, event_prefix: str
+    ) -> None:
         target = openai_client
         for attr in path:
             target = getattr(target, attr, None)
@@ -131,7 +144,9 @@ class BlocklogOpenAIInstrumentation:
             parent_run_id = _current_span_id.get()
             stream = bool(kwargs.get("stream", False))
 
-            self._emit_start(event_prefix, kwargs, run_id=run_id, parent_run_id=parent_run_id)
+            self._emit_start(
+                event_prefix, kwargs, run_id=run_id, parent_run_id=parent_run_id
+            )
             token = _current_span_id.set(run_id)
             start = time.monotonic()
 
@@ -139,18 +154,27 @@ class BlocklogOpenAIInstrumentation:
                 result = original_create(*args, **kwargs)
             except BaseException as error:
                 _current_span_id.reset(token)
-                self._emit_error(event_prefix, error, run_id=run_id, parent_run_id=parent_run_id)
+                self._emit_error(
+                    event_prefix, error, run_id=run_id, parent_run_id=parent_run_id
+                )
                 raise
 
             if stream:
                 return self._consume_sync_stream(
-                    result, run_id=run_id, parent_run_id=parent_run_id, start=start,
-                    token=token, event_prefix=event_prefix,
+                    result,
+                    run_id=run_id,
+                    parent_run_id=parent_run_id,
+                    start=start,
+                    token=token,
+                    event_prefix=event_prefix,
                 )
 
             _current_span_id.reset(token)
             self._emit_end(
-                event_prefix, result, run_id=run_id, parent_run_id=parent_run_id,
+                event_prefix,
+                result,
+                run_id=run_id,
+                parent_run_id=parent_run_id,
                 duration_s=time.monotonic() - start,
             )
             return result
@@ -163,7 +187,9 @@ class BlocklogOpenAIInstrumentation:
             parent_run_id = _current_span_id.get()
             stream = bool(kwargs.get("stream", False))
 
-            self._emit_start(event_prefix, kwargs, run_id=run_id, parent_run_id=parent_run_id)
+            self._emit_start(
+                event_prefix, kwargs, run_id=run_id, parent_run_id=parent_run_id
+            )
             token = _current_span_id.set(run_id)
             start = time.monotonic()
 
@@ -171,18 +197,27 @@ class BlocklogOpenAIInstrumentation:
                 result = await original_create(*args, **kwargs)
             except BaseException as error:
                 _current_span_id.reset(token)
-                self._emit_error(event_prefix, error, run_id=run_id, parent_run_id=parent_run_id)
+                self._emit_error(
+                    event_prefix, error, run_id=run_id, parent_run_id=parent_run_id
+                )
                 raise
 
             if stream:
                 return self._consume_async_stream(
-                    result, run_id=run_id, parent_run_id=parent_run_id, start=start,
-                    token=token, event_prefix=event_prefix,
+                    result,
+                    run_id=run_id,
+                    parent_run_id=parent_run_id,
+                    start=start,
+                    token=token,
+                    event_prefix=event_prefix,
                 )
 
             _current_span_id.reset(token)
             self._emit_end(
-                event_prefix, result, run_id=run_id, parent_run_id=parent_run_id,
+                event_prefix,
+                result,
+                run_id=run_id,
+                parent_run_id=parent_run_id,
                 duration_s=time.monotonic() - start,
             )
             return result
@@ -191,7 +226,9 @@ class BlocklogOpenAIInstrumentation:
 
     # ---------- streaming ----------
 
-    def _consume_sync_stream(self, stream_obj, *, run_id, parent_run_id, start, token, event_prefix):
+    def _consume_sync_stream(
+        self, stream_obj, *, run_id, parent_run_id, start, token, event_prefix
+    ):
         chunks: list[Any] = []
         try:
             for chunk in stream_obj:
@@ -199,16 +236,24 @@ class BlocklogOpenAIInstrumentation:
                 yield chunk
         except BaseException as error:
             _current_span_id.reset(token)
-            self._emit_error(event_prefix, error, run_id=run_id, parent_run_id=parent_run_id)
+            self._emit_error(
+                event_prefix, error, run_id=run_id, parent_run_id=parent_run_id
+            )
             raise
         else:
             _current_span_id.reset(token)
             self._emit_end(
-                event_prefix, _aggregate_stream_chunks(chunks), run_id=run_id,
-                parent_run_id=parent_run_id, duration_s=time.monotonic() - start, streamed=True,
+                event_prefix,
+                _aggregate_stream_chunks(chunks),
+                run_id=run_id,
+                parent_run_id=parent_run_id,
+                duration_s=time.monotonic() - start,
+                streamed=True,
             )
 
-    async def _consume_async_stream(self, stream_obj, *, run_id, parent_run_id, start, token, event_prefix):
+    async def _consume_async_stream(
+        self, stream_obj, *, run_id, parent_run_id, start, token, event_prefix
+    ):
         chunks: list[Any] = []
         try:
             async for chunk in stream_obj:
@@ -216,13 +261,19 @@ class BlocklogOpenAIInstrumentation:
                 yield chunk
         except BaseException as error:
             _current_span_id.reset(token)
-            self._emit_error(event_prefix, error, run_id=run_id, parent_run_id=parent_run_id)
+            self._emit_error(
+                event_prefix, error, run_id=run_id, parent_run_id=parent_run_id
+            )
             raise
         else:
             _current_span_id.reset(token)
             self._emit_end(
-                event_prefix, _aggregate_stream_chunks(chunks), run_id=run_id,
-                parent_run_id=parent_run_id, duration_s=time.monotonic() - start, streamed=True,
+                event_prefix,
+                _aggregate_stream_chunks(chunks),
+                run_id=run_id,
+                parent_run_id=parent_run_id,
+                duration_s=time.monotonic() - start,
+                streamed=True,
             )
 
     # ---------- event emission ----------
@@ -231,7 +282,9 @@ class BlocklogOpenAIInstrumentation:
     # from blocklog.context.vars.get_context() automatically — we only need
     # to pass span_id, causality_type, and agent_metadata ourselves.
 
-    def _emit_start(self, event_prefix: str, kwargs: dict[str, Any], *, run_id, parent_run_id) -> None:
+    def _emit_start(
+        self, event_prefix: str, kwargs: dict[str, Any], *, run_id, parent_run_id
+    ) -> None:
         messages = kwargs.get("messages") or kwargs.get("input")
         request = {k: v for k, v in kwargs.items() if k not in ("messages", "input")}
         self.client.event(
@@ -248,7 +301,16 @@ class BlocklogOpenAIInstrumentation:
             agent_metadata=_agent_metadata(parent_run_id=parent_run_id),
         )
 
-    def _emit_end(self, event_prefix: str, response: Any, *, run_id, parent_run_id, duration_s: float, streamed: bool = False) -> None:
+    def _emit_end(
+        self,
+        event_prefix: str,
+        response: Any,
+        *,
+        run_id,
+        parent_run_id,
+        duration_s: float,
+        streamed: bool = False,
+    ) -> None:
         dumped = _safe_model_dump(response)
         usage = dumped.get("usage") if isinstance(dumped, dict) else None
         self.client.event(
@@ -266,10 +328,15 @@ class BlocklogOpenAIInstrumentation:
             agent_metadata=_agent_metadata(parent_run_id=parent_run_id),
         )
 
-    def _emit_error(self, event_prefix: str, error: BaseException, *, run_id, parent_run_id) -> None:
+    def _emit_error(
+        self, event_prefix: str, error: BaseException, *, run_id, parent_run_id
+    ) -> None:
         self.client.event(
             f"{event_prefix}.errored",
-            {**_error_payload(error), "parent_run_id": str(parent_run_id) if parent_run_id else None},
+            {
+                **_error_payload(error),
+                "parent_run_id": str(parent_run_id) if parent_run_id else None,
+            },
             source=self.source,
             span_id=str(run_id),
             causality_type="llm_error",
@@ -277,7 +344,9 @@ class BlocklogOpenAIInstrumentation:
         )
 
 
-def instrument_openai(client, openai_client: Any | None = None, *, source: str = "openai") -> Any:
+def instrument_openai(
+    client, openai_client: Any | None = None, *, source: str = "openai"
+) -> Any:
     """Instrument the OpenAI SDK so chat completions / responses calls emit
     Blocklog events.
 
@@ -299,6 +368,7 @@ def instrument_openai(client, openai_client: Any | None = None, *, source: str =
 
 
 # ---------- helpers ----------
+
 
 def _safe_model_dump(value: Any) -> Any:
     if hasattr(value, "model_dump"):
@@ -325,7 +395,9 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _agent_metadata(*, parent_run_id=None, extra: dict[str, Any] | None = None) -> dict[str, Any]:
+def _agent_metadata(
+    *, parent_run_id=None, extra: dict[str, Any] | None = None
+) -> dict[str, Any]:
     metadata = {
         "framework": "openai",
         "captured_at": _utc_now(),
@@ -337,7 +409,9 @@ def _agent_metadata(*, parent_run_id=None, extra: dict[str, Any] | None = None) 
 
 
 def _is_coroutine_function(fn: Callable) -> bool:
-    return inspect.iscoroutinefunction(fn) or inspect.iscoroutinefunction(getattr(fn, "__wrapped__", None))
+    return inspect.iscoroutinefunction(fn) or inspect.iscoroutinefunction(
+        getattr(fn, "__wrapped__", None)
+    )
 
 
 def _aggregate_stream_chunks(chunks: list[Any]) -> dict[str, Any]:
@@ -357,12 +431,22 @@ def _aggregate_stream_chunks(chunks: list[Any]) -> dict[str, Any]:
         for d in dumped:
             for choice in d.get("choices", []):
                 idx = choice.get("index", 0)
-                slot = merged.setdefault(idx, {"index": idx, "content": "", "tool_calls": None, "finish_reason": None})
+                slot = merged.setdefault(
+                    idx,
+                    {
+                        "index": idx,
+                        "content": "",
+                        "tool_calls": None,
+                        "finish_reason": None,
+                    },
+                )
                 delta = choice.get("delta") or {}
                 if delta.get("content"):
                     slot["content"] += delta["content"]
                 if delta.get("tool_calls"):
-                    slot["tool_calls"] = delta["tool_calls"]  # last write wins; refine if you need a full merge
+                    slot["tool_calls"] = delta[
+                        "tool_calls"
+                    ]  # last write wins; refine if you need a full merge
                 if choice.get("finish_reason"):
                     slot["finish_reason"] = choice["finish_reason"]
         return {

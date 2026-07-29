@@ -25,14 +25,16 @@ Usage::
         def run(self):
             ...
 """
+
 from __future__ import annotations
 
 import functools
 import inspect
 import logging
 import traceback as _traceback
+from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 logger = logging.getLogger("blocklog")
 
@@ -88,6 +90,7 @@ def agent(
     Callable
         The decorated function (or a decorator if called with arguments).
     """
+
     def decorator(fn: F) -> F:
         agent_name = name or fn.__name__
         agent_meta = {
@@ -124,65 +127,110 @@ def agent(
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-def _run_sync(fn: Callable, args: tuple, kwargs: dict, agent_name: str, meta: dict) -> Any:
+
+def _run_sync(
+    fn: Callable, args: tuple, kwargs: dict, agent_name: str, meta: dict
+) -> Any:
     from blocklog.context.managers import agent_session
+
     started_at = _now()
     with agent_session(agent_id=agent_name, source=f"agent:{agent_name}") as ctx:
-        logger.debug("Agent context pushed: agent_name=%s, trace_id=%s, session_id=%s", agent_name, ctx.trace_id, ctx.session_id)
-        _emit("AGENT_START", {
-            "agent_name": agent_name,
-            "started_at": started_at,
-            **meta,
-        }, ctx)
+        logger.debug(
+            "Agent context pushed: agent_name=%s, trace_id=%s, session_id=%s",
+            agent_name,
+            ctx.trace_id,
+            ctx.session_id,
+        )
+        _emit(
+            "AGENT_START",
+            {
+                "agent_name": agent_name,
+                "started_at": started_at,
+                **meta,
+            },
+            ctx,
+        )
         try:
             result = fn(*args, **kwargs)
-            _emit("AGENT_COMPLETE", {
-                "agent_name": agent_name,
-                "duration_ms": _elapsed_ms(started_at),
-                "status": "ok",
-            }, ctx)
+            _emit(
+                "AGENT_COMPLETE",
+                {
+                    "agent_name": agent_name,
+                    "duration_ms": _elapsed_ms(started_at),
+                    "status": "ok",
+                },
+                ctx,
+            )
             logger.debug("Agent context popped: agent_name=%s, status=ok", agent_name)
             return result
         except BaseException as exc:
-            _emit("AGENT_ERROR", {
-                "agent_name": agent_name,
-                "duration_ms": _elapsed_ms(started_at),
-                "error_type": type(exc).__name__,
-                "error_message": str(exc),
-                "traceback": _traceback.format_exc(),
-            }, ctx)
-            logger.debug("Agent context popped: agent_name=%s, status=error", agent_name)
+            _emit(
+                "AGENT_ERROR",
+                {
+                    "agent_name": agent_name,
+                    "duration_ms": _elapsed_ms(started_at),
+                    "error_type": type(exc).__name__,
+                    "error_message": str(exc),
+                    "traceback": _traceback.format_exc(),
+                },
+                ctx,
+            )
+            logger.debug(
+                "Agent context popped: agent_name=%s, status=error", agent_name
+            )
             raise
 
 
-async def _run_async(fn: Callable, args: tuple, kwargs: dict, agent_name: str, meta: dict) -> Any:
+async def _run_async(
+    fn: Callable, args: tuple, kwargs: dict, agent_name: str, meta: dict
+) -> Any:
     from blocklog.context.managers import agent_session
+
     started_at = _now()
     with agent_session(agent_id=agent_name, source=f"agent:{agent_name}") as ctx:
-        logger.debug("Agent context pushed: agent_name=%s, trace_id=%s, session_id=%s", agent_name, ctx.trace_id, ctx.session_id)
-        _emit("AGENT_START", {
-            "agent_name": agent_name,
-            "started_at": started_at,
-            **meta,
-        }, ctx)
+        logger.debug(
+            "Agent context pushed: agent_name=%s, trace_id=%s, session_id=%s",
+            agent_name,
+            ctx.trace_id,
+            ctx.session_id,
+        )
+        _emit(
+            "AGENT_START",
+            {
+                "agent_name": agent_name,
+                "started_at": started_at,
+                **meta,
+            },
+            ctx,
+        )
         try:
             result = await fn(*args, **kwargs)
-            _emit("AGENT_COMPLETE", {
-                "agent_name": agent_name,
-                "duration_ms": _elapsed_ms(started_at),
-                "status": "ok",
-            }, ctx)
+            _emit(
+                "AGENT_COMPLETE",
+                {
+                    "agent_name": agent_name,
+                    "duration_ms": _elapsed_ms(started_at),
+                    "status": "ok",
+                },
+                ctx,
+            )
             logger.debug("Agent context popped: agent_name=%s, status=ok", agent_name)
             return result
         except BaseException as exc:
-            _emit("AGENT_ERROR", {
-                "agent_name": agent_name,
-                "duration_ms": _elapsed_ms(started_at),
-                "error_type": type(exc).__name__,
-                "error_message": str(exc),
-                "traceback": _traceback.format_exc(),
-            }, ctx)
-            logger.debug("Agent context popped: agent_name=%s, status=error", agent_name)
+            _emit(
+                "AGENT_ERROR",
+                {
+                    "agent_name": agent_name,
+                    "duration_ms": _elapsed_ms(started_at),
+                    "error_type": type(exc).__name__,
+                    "error_message": str(exc),
+                    "traceback": _traceback.format_exc(),
+                },
+                ctx,
+            )
+            logger.debug(
+                "Agent context popped: agent_name=%s, status=error", agent_name
+            )
             raise
 
 
@@ -201,7 +249,12 @@ def _wrap_class(cls: type, agent_name: str, meta: dict) -> type:
 
         ctx = SessionContext(agent_id=agent_name, source=f"agent:{agent_name}")
         set_context(ctx)
-        logger.debug("Agent context pushed: agent_name=%s, trace_id=%s, session_id=%s", agent_name, ctx.trace_id, ctx.session_id)
+        logger.debug(
+            "Agent context pushed: agent_name=%s, trace_id=%s, session_id=%s",
+            agent_name,
+            ctx.trace_id,
+            ctx.session_id,
+        )
         _emit("AGENT_START", {"agent_name": agent_name, **meta}, ctx)
         original_init(self, *args, **kwargs)
 
@@ -212,6 +265,7 @@ def _wrap_class(cls: type, agent_name: str, meta: dict) -> type:
 def _emit(event_type: str, payload: dict, ctx: Any) -> None:
     try:
         from blocklog._global import get_client
+
         client = get_client()
         client.event(
             event_type,

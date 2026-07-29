@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class TeamMembersClient:
-    def __init__(self, client: "BlocklogClient") -> None:
+    def __init__(self, client: BlocklogClient) -> None:
         self._client = client
 
     def list(self, team_id: str) -> list[TeamMember]:
@@ -48,7 +48,9 @@ class TeamMembersClient:
         if role is not None:
             payload["role"] = to_backend_role(role).value
 
-        response = self._client.transport.request("POST", f"/teams/{team_id}/members", json=payload)
+        response = self._client.transport.request(
+            "POST", f"/teams/{team_id}/members", json=payload
+        )
         return normalize_team_member(response)
 
     def update(
@@ -76,16 +78,20 @@ class TeamMembersClient:
         return normalize_team_member(response)
 
     def remove(self, team_id: str, member_id: str) -> None:
-        self._client.transport.request("DELETE", f"/teams/{team_id}/members/{member_id}")
+        self._client.transport.request(
+            "DELETE", f"/teams/{team_id}/members/{member_id}"
+        )
 
 
 class TeamsClient:
-    def __init__(self, client: "BlocklogClient") -> None:
+    def __init__(self, client: BlocklogClient) -> None:
         self._client = client
         self.members = TeamMembersClient(client)
 
     def list(self) -> list[Team]:
-        payload = self._client.retry.run(lambda: self._client.transport.request("GET", "/teams"))
+        payload = self._client.retry.run(
+            lambda: self._client.transport.request("GET", "/teams")
+        )
         return [normalize_team(item) for item in (payload or [])]
 
     def get(self, team_id: str) -> Team:
@@ -95,25 +101,33 @@ class TeamsClient:
         return normalize_team(payload)
 
     def create(self, **payload) -> Team:
-        return normalize_team(self._client.transport.request("POST", "/teams", json=payload))
+        return normalize_team(
+            self._client.transport.request("POST", "/teams", json=payload)
+        )
 
     def update(self, team_id: str, **payload) -> Team:
-        return normalize_team(self._client.transport.request("PATCH", f"/teams/{team_id}", json=payload))
+        return normalize_team(
+            self._client.transport.request("PATCH", f"/teams/{team_id}", json=payload)
+        )
 
     def delete(self, team_id: str) -> None:
         self._client.transport.request("DELETE", f"/teams/{team_id}")
 
     def notify_test(self, team_id: str) -> NotifyTestResponse:
-        payload = self._client.transport.request("POST", f"/teams/{team_id}/notify-test", json={})
+        payload = self._client.transport.request(
+            "POST", f"/teams/{team_id}/notify-test", json={}
+        )
         return NotifyTestResponse.model_validate(payload)
 
 
 class AsyncTeamMembersClient:
-    def __init__(self, client: "AsyncBlocklogClient") -> None:
+    def __init__(self, client: AsyncBlocklogClient) -> None:
         self._client = client
 
     async def list(self, team_id: str) -> list[TeamMember]:
-        payload = await self._client.transport.request("GET", f"/teams/{team_id}/members")
+        payload = await self._client.transport.request(
+            "GET", f"/teams/{team_id}/members"
+        )
         return [normalize_team_member(item) for item in (payload or [])]
 
     async def add(
@@ -137,7 +151,9 @@ class AsyncTeamMembersClient:
         if role is not None:
             payload["role"] = to_backend_role(role).value
 
-        response = await self._client.transport.request("POST", f"/teams/{team_id}/members", json=payload)
+        response = await self._client.transport.request(
+            "POST", f"/teams/{team_id}/members", json=payload
+        )
         return normalize_team_member(response)
 
     async def update(
@@ -165,11 +181,13 @@ class AsyncTeamMembersClient:
         return normalize_team_member(response)
 
     async def remove(self, team_id: str, member_id: str) -> None:
-        await self._client.transport.request("DELETE", f"/teams/{team_id}/members/{member_id}")
+        await self._client.transport.request(
+            "DELETE", f"/teams/{team_id}/members/{member_id}"
+        )
 
 
 class AsyncTeamsClient:
-    def __init__(self, client: "AsyncBlocklogClient") -> None:
+    def __init__(self, client: AsyncBlocklogClient) -> None:
         self._client = client
         self.members = AsyncTeamMembersClient(client)
 
@@ -186,12 +204,16 @@ class AsyncTeamsClient:
         return normalize_team(response)
 
     async def update(self, team_id: str, **payload) -> Team:
-        response = await self._client.transport.request("PATCH", f"/teams/{team_id}", json=payload)
+        response = await self._client.transport.request(
+            "PATCH", f"/teams/{team_id}", json=payload
+        )
         return normalize_team(response)
 
     async def delete(self, team_id: str) -> None:
         await self._client.transport.request("DELETE", f"/teams/{team_id}")
 
     async def notify_test(self, team_id: str) -> NotifyTestResponse:
-        payload = await self._client.transport.request("POST", f"/teams/{team_id}/notify-test", json={})
+        payload = await self._client.transport.request(
+            "POST", f"/teams/{team_id}/notify-test", json={}
+        )
         return NotifyTestResponse.model_validate(payload)

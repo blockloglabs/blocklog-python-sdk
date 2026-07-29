@@ -34,14 +34,16 @@ import blocklog
 
 client = blocklog.init()
 
+
 def pii_redactor(payload: dict) -> dict:
     """A middleware hook to redact sensitive keys."""
     # Example logic: redact any value in the payload that might be a password
     if "data" in payload and isinstance(payload["data"], dict):
         if "password" in payload["data"]:
             payload["data"]["password"] = "[REDACTED]"
-            
+
     return payload
+
 
 # Register the hook
 client.add_hook(pii_redactor)
@@ -53,8 +55,8 @@ In production, ensure your network operations are tuned to your infrastructure's
 
 ```python
 blocklog.init(
-    timeout=5.0,       # Fail fast instead of waiting 10s
-    max_retries=1,     # Reduce retries to prevent blocking lambda execution
+    timeout=5.0,  # Fail fast instead of waiting 10s
+    max_retries=1,  # Reduce retries to prevent blocking lambda execution
 )
 ```
 

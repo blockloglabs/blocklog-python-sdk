@@ -20,6 +20,7 @@ Backend endpoints
 - POST  /api/v1/replay/sessions  (simple replay)
 - GET   /api/v1/replay/sessions/{id}
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -45,7 +46,7 @@ class ReplaySession:
     >>> session.compare(other_trace_id="trace-def")
     """
 
-    def __init__(self, data: dict[str, Any], client: "ReplayClient") -> None:
+    def __init__(self, data: dict[str, Any], client: ReplayClient) -> None:
         self._data = data
         self._client = client
         self.id: str = str(data.get("id", data.get("replay_session_id", "")))
@@ -138,7 +139,9 @@ class ReplaySession:
         dict
             Counterfactual analysis result.
         """
-        return self._client.counterfactual(self.id, token_id=token_id, modified_inputs=modified_inputs)
+        return self._client.counterfactual(
+            self.id, token_id=token_id, modified_inputs=modified_inputs
+        )
 
     def compare(self, other_trace_id: str) -> dict[str, Any]:
         """Compare this replay session against another trace.
@@ -175,7 +178,7 @@ class ReplayClient:
     >>> session.compare("trace-def")
     """
 
-    def __init__(self, client: "BlocklogClient") -> None:
+    def __init__(self, client: BlocklogClient) -> None:
         self._client = client
 
     def create(
@@ -208,45 +211,59 @@ class ReplayClient:
             payload["metadata"] = metadata
 
         data = self._client.retry.run(
-            lambda: self._client.transport.request("POST", "/forensics/replays", json=payload)
+            lambda: self._client.transport.request(
+                "POST", "/forensics/replays", json=payload
+            )
         )
         return ReplaySession(data, self)
 
     def get(self, replay_session_id: str) -> ReplaySession:
         """Fetch an existing replay session by ID."""
         data = self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/forensics/replays/{replay_session_id}")
+            lambda: self._client.transport.request(
+                "GET", f"/forensics/replays/{replay_session_id}"
+            )
         )
         return ReplaySession(data, self)
 
     def timeline(self, replay_session_id: str) -> list[dict[str, Any]]:
         """Return the event timeline for a replay session."""
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/forensics/replays/{replay_session_id}/timeline")
+            lambda: self._client.transport.request(
+                "GET", f"/forensics/replays/{replay_session_id}/timeline"
+            )
         )
 
     def root_cause(self, replay_session_id: str) -> dict[str, Any]:
         """Run root-cause analysis on a replay session."""
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/forensics/replays/{replay_session_id}/root-cause")
+            lambda: self._client.transport.request(
+                "GET", f"/forensics/replays/{replay_session_id}/root-cause"
+            )
         )
 
     def causal_graph(self, replay_session_id: str) -> dict[str, Any]:
         """Return the causal graph for a replay session."""
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/forensics/replays/{replay_session_id}/causal-graph")
+            lambda: self._client.transport.request(
+                "GET", f"/forensics/replays/{replay_session_id}/causal-graph"
+            )
         )
 
     def staleness(self, replay_session_id: str) -> dict[str, Any]:
         """Return staleness heatmap for a replay session."""
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/forensics/replays/{replay_session_id}/staleness")
+            lambda: self._client.transport.request(
+                "GET", f"/forensics/replays/{replay_session_id}/staleness"
+            )
         )
 
     def divergence(self, replay_session_id: str) -> list[dict[str, Any]]:
         """Return divergence analysis for a replay session."""
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/forensics/replays/{replay_session_id}/divergence")
+            lambda: self._client.transport.request(
+                "GET", f"/forensics/replays/{replay_session_id}/divergence"
+            )
         )
 
     def counterfactual(
@@ -272,14 +289,20 @@ class ReplayClient:
     ) -> dict[str, Any]:
         """Compare two replay sessions and return a diff of differences."""
         return self._client.retry.run(
-            lambda: self._client.transport.request("POST", "/forensics/compare", json={
-                "baseline_session_id": baseline_session_id,
-                "candidate_session_id": candidate_session_id,
-            })
+            lambda: self._client.transport.request(
+                "POST",
+                "/forensics/compare",
+                json={
+                    "baseline_session_id": baseline_session_id,
+                    "candidate_session_id": candidate_session_id,
+                },
+            )
         )
 
     def get_comparison(self, comparison_id: str) -> dict[str, Any]:
         """Retrieve a previously computed replay comparison."""
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/forensics/compare/{comparison_id}")
+            lambda: self._client.transport.request(
+                "GET", f"/forensics/compare/{comparison_id}"
+            )
         )

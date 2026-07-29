@@ -13,6 +13,7 @@ Demonstrates the full incident investigation workflow:
 Run:
     BLOCKLOG_API_KEY=blk_... python 04_incident_investigation.py
 """
+
 import os
 
 import blocklog
@@ -47,11 +48,22 @@ def investigate(trace_id: str) -> None:
         class _MockIncident:
             id = "inc_demo_001"
             status = "open"
-            def assign(self, *a, **kw): return self
-            def annotate(self, *a, **kw): return {}
-            def resolve(self, *a, **kw): return self
-            def close(self, *a, **kw): return self
-            def report(self): return {"status": "generated"}
+
+            def assign(self, *a, **kw):
+                return self
+
+            def annotate(self, *a, **kw):
+                return {}
+
+            def resolve(self, *a, **kw):
+                return self
+
+            def close(self, *a, **kw):
+                return self
+
+            def report(self):
+                return {"status": "generated"}
+
         inc = _MockIncident()
 
     # ── Step 2: Assign the incident ───────────────────────────────────────────
@@ -96,14 +108,22 @@ def investigate(trace_id: str) -> None:
         findings = stale.get("findings", [])
         print(f"\n        Staleness rating : {rating}")
         for f in findings[:2]:
-            print(f"          - {f.get('path','?')} | stale={f.get('stale')} | risk={f.get('risk_score')}")
+            print(
+                f"          - {f.get('path', '?')} | stale={f.get('stale')} | risk={f.get('risk_score')}"
+            )
 
     except Exception as e:
         print(f"        (demo: replay → {e})")
         print("\n  [4/5] Root cause analysis (demo fallback)...")
-        print("        Root cause: STALE_CONTEXT — data source was 47s stale (limit: 30s)")
-        root_cause_description = "Execution relied on stale price feed data (age 47s, limit 30s)."
-        root_cause_remediation = "Reduce data cache TTL to 20s or add freshness gate before execution."
+        print(
+            "        Root cause: STALE_CONTEXT — data source was 47s stale (limit: 30s)"
+        )
+        root_cause_description = (
+            "Execution relied on stale price feed data (age 47s, limit 30s)."
+        )
+        root_cause_remediation = (
+            "Reduce data cache TTL to 20s or add freshness gate before execution."
+        )
 
     # ── Step 5: Annotate and resolve ──────────────────────────────────────────
     print("\n  [5/5] Annotating and resolving incident...")
@@ -125,7 +145,10 @@ def investigate(trace_id: str) -> None:
         )
         print("        ✓ Incident resolved")
 
-        inc.close(notes="Root cause confirmed and remediation deployed.", approval_status="approved")
+        inc.close(
+            notes="Root cause confirmed and remediation deployed.",
+            approval_status="approved",
+        )
         print("        ✓ Incident closed")
 
         report = inc.report()

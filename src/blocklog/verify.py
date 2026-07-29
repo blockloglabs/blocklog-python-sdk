@@ -14,6 +14,7 @@ Usage (Layer 1)::
     print(result["status"])          # "verified"
     print(result["signature"])
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -34,6 +35,7 @@ def log(log_id: str) -> dict[str, Any]:
         ``details``.
     """
     from blocklog._global import get_client
+
     return get_client().verify.log(log_id)
 
 
@@ -52,6 +54,7 @@ def batch(batch_id: str) -> dict[str, Any]:
         ``details``.
     """
     from blocklog._global import get_client
+
     return get_client().verify.batch(batch_id)
 
 
@@ -69,4 +72,5 @@ def decision(decision_id: str) -> dict[str, Any]:
         Verification summary including Merkle and signature evidence.
     """
     from blocklog._global import get_client
+
     return get_client().verify.decision(decision_id)

@@ -11,6 +11,7 @@ Backend endpoints
 - GET  /api/v1/traces/{trace_id}
 - GET  /api/v1/sessions/{session_id}/timeline
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -31,7 +32,7 @@ class TracesClient:
     >>> timeline = client.traces.session_timeline("session-uuid")
     """
 
-    def __init__(self, client: "BlocklogClient") -> None:
+    def __init__(self, client: BlocklogClient) -> None:
         self._client = client
 
     def list(
@@ -133,5 +134,7 @@ class TracesClient:
             params["cursor"] = cursor
 
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/sessions/{session_id}/timeline", params=params)
+            lambda: self._client.transport.request(
+                "GET", f"/sessions/{session_id}/timeline", params=params
+            )
         )

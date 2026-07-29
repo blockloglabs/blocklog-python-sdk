@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class AuthClient:
-    def __init__(self, client: "BlocklogClient") -> None:
+    def __init__(self, client: BlocklogClient) -> None:
         self._client = client
 
     def me(self) -> User:
@@ -21,10 +21,14 @@ class AuthClient:
 
     def signup(self, **payload) -> SignupResponse:
         token_response = TokenResponse.model_validate(
-            self._client.transport.request("POST", "/auth/signup", json=payload, skip_auth=True)
+            self._client.transport.request(
+                "POST", "/auth/signup", json=payload, skip_auth=True
+            )
         )
         if token_response.team_id is None:
-            raise RuntimeError("Signup succeeded but no team was returned by the backend.")
+            raise RuntimeError(
+                "Signup succeeded but no team was returned by the backend."
+            )
 
         user = User.model_validate(
             self._client.transport.request(
@@ -68,7 +72,9 @@ class AuthClient:
             "/teams",
             token_override=token_response.access_token,
         )
-        primary_team = get_primary_team([normalize_team(item) for item in (teams or [])])
+        primary_team = get_primary_team(
+            [normalize_team(item) for item in (teams or [])]
+        )
         return LoginResponse(
             user=user,
             token=token_response.access_token,
@@ -78,7 +84,7 @@ class AuthClient:
 
 
 class AsyncAuthClient:
-    def __init__(self, client: "AsyncBlocklogClient") -> None:
+    def __init__(self, client: AsyncBlocklogClient) -> None:
         self._client = client
 
     async def me(self) -> User:
@@ -87,10 +93,14 @@ class AsyncAuthClient:
 
     async def signup(self, **payload) -> SignupResponse:
         token_response = TokenResponse.model_validate(
-            await self._client.transport.request("POST", "/auth/signup", json=payload, skip_auth=True)
+            await self._client.transport.request(
+                "POST", "/auth/signup", json=payload, skip_auth=True
+            )
         )
         if token_response.team_id is None:
-            raise RuntimeError("Signup succeeded but no team was returned by the backend.")
+            raise RuntimeError(
+                "Signup succeeded but no team was returned by the backend."
+            )
 
         user = User.model_validate(
             await self._client.transport.request(
@@ -134,7 +144,9 @@ class AsyncAuthClient:
             "/teams",
             token_override=token_response.access_token,
         )
-        primary_team = get_primary_team([normalize_team(item) for item in (teams or [])])
+        primary_team = get_primary_team(
+            [normalize_team(item) for item in (teams or [])]
+        )
         return LoginResponse(
             user=user,
             token=token_response.access_token,

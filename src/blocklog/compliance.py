@@ -17,6 +17,7 @@ Usage (Layer 1)::
     reports   = blocklog.compliance.list()
     share_url = blocklog.compliance.share(report["id"], expires_in=86400)
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -47,6 +48,7 @@ def generate(
         Arbitrary extra data to embed in the report.
     """
     from blocklog._global import get_client
+
     return get_client().compliance.generate(
         trace_id=trace_id,
         framework=framework,
@@ -59,18 +61,21 @@ def generate(
 def get(report_id: str) -> dict[str, Any]:
     """Fetch a compliance report by ID."""
     from blocklog._global import get_client
+
     return get_client().compliance.get(report_id)
 
 
-def list() -> list[dict[str, Any]]:  # noqa: A001
+def list() -> list[dict[str, Any]]:
     """List all compliance reports for the company."""
     from blocklog._global import get_client
+
     return get_client().compliance.list()
 
 
 def dashboard() -> dict[str, Any]:
     """Return the compliance dashboard summary."""
     from blocklog._global import get_client
+
     return get_client().compliance.dashboard()
 
 
@@ -82,6 +87,7 @@ def share(
 ) -> dict[str, Any]:
     """Create a shareable link for a compliance report."""
     from blocklog._global import get_client
+
     return get_client().compliance.share(
         report_id=report_id,
         expires_in=expires_in,
@@ -92,4 +98,5 @@ def share(
 def export(report_id: str, *, download: bool = False) -> dict[str, Any]:
     """Export a compliance report as JSON."""
     from blocklog._global import get_client
+
     return get_client().compliance.export(report_id=report_id, download=download)

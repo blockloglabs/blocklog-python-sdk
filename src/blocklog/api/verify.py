@@ -11,6 +11,7 @@ Backend endpoints
 - GET  /api/v1/verify/batch/{batch_id}
 - GET  /api/v1/decisions/{id}/verify
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -38,7 +39,7 @@ class VerifyClient:
     >>> print(result["status"])   # "verified"
     """
 
-    def __init__(self, client: "BlocklogClient") -> None:
+    def __init__(self, client: BlocklogClient) -> None:
         self._client = client
 
     def log(self, log_id: str) -> dict[str, Any]:
@@ -96,5 +97,7 @@ class VerifyClient:
             Verification summary including Merkle and signature evidence.
         """
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/decisions/{decision_id}/verify")
+            lambda: self._client.transport.request(
+                "GET", f"/decisions/{decision_id}/verify"
+            )
         )

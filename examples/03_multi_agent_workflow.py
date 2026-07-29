@@ -13,6 +13,7 @@ A final compliance report is generated over the full workflow.
 Run:
     BLOCKLOG_API_KEY=blk_... python 02_multi_agent_hedge_fund.py
 """
+
 import os
 import random
 from uuid import uuid4
@@ -27,6 +28,7 @@ print(f"✦ Workflow ID: {WORKFLOW_ID}\n")
 
 
 # ── Tools (shared across agents) ──────────────────────────────────────────────
+
 
 @blocklog.tool(name="fetch-price")
 def fetch_price(ticker: str) -> float:
@@ -52,7 +54,7 @@ def check_risk_limits(ticker: str, qty: int, price: float) -> dict:
 @blocklog.tool(name="execute-trade")
 def execute_trade(ticker: str, qty: int, price: float) -> dict:
     return {
-        "order_id": f"ord_{random.randint(10000,99999)}",
+        "order_id": f"ord_{random.randint(10000, 99999)}",
         "filled_at": price * 1.0008,
         "qty": qty,
         "total_value": qty * price,
@@ -61,13 +63,14 @@ def execute_trade(ticker: str, qty: int, price: float) -> dict:
 
 # ── Agent 1: Market Analyst ────────────────────────────────────────────────────
 
+
 @blocklog.agent(name="market-analyst", version="2.1", tags=["analysis"])
 def analyst_agent(ticker: str) -> dict:
     print(f"[Analyst] Analysing {ticker}...")
 
-    price  = fetch_price(ticker)
+    price = fetch_price(ticker)
     volume = random.randint(1_000_000, 4_000_000)
-    score  = momentum_score(price, volume)
+    score = momentum_score(price, volume)
 
     signal = "BUY" if score > 0.5 else "HOLD"
 
@@ -82,11 +85,20 @@ def analyst_agent(ticker: str) -> dict:
         d.tag("analysis", "momentum")
         signal_decision_id = d.id
 
-    print(f"[Analyst] Signal: {signal} (score={score}) — decision: {signal_decision_id}")
-    return {"ticker": ticker, "price": price, "signal": signal, "confidence": score, "decision_id": signal_decision_id}
+    print(
+        f"[Analyst] Signal: {signal} (score={score}) — decision: {signal_decision_id}"
+    )
+    return {
+        "ticker": ticker,
+        "price": price,
+        "signal": signal,
+        "confidence": score,
+        "decision_id": signal_decision_id,
+    }
 
 
 # ── Agent 2: Risk Manager ──────────────────────────────────────────────────────
+
 
 @blocklog.agent(name="risk-manager", version="1.5", tags=["risk"])
 def risk_agent(ticker: str, price: float, qty: int, analyst_decision_id: str) -> dict:
@@ -128,6 +140,7 @@ def risk_agent(ticker: str, price: float, qty: int, analyst_decision_id: str) ->
 
 # ── Agent 3: Execution Engine ──────────────────────────────────────────────────
 
+
 @blocklog.agent(name="executor", version="1.0", tags=["execution"])
 def executor_agent(ticker: str, qty: int, price: float, risk_decision_id: str) -> dict:
     print(f"[Executor] Executing {qty}x {ticker}...")
@@ -153,7 +166,9 @@ def executor_agent(ticker: str, qty: int, price: float, risk_decision_id: str) -
         d.tag("execution", "filled")
         execution_decision_id = d.id
 
-    print(f"[Executor] Filled: order {order['order_id']} — decision: {execution_decision_id}")
+    print(
+        f"[Executor] Filled: order {order['order_id']} — decision: {execution_decision_id}"
+    )
     return {**order, "execution_decision_id": execution_decision_id}
 
 
@@ -161,7 +176,7 @@ def executor_agent(ticker: str, qty: int, price: float, risk_decision_id: str) -
 
 if __name__ == "__main__":
     TICKER = "TSLA"
-    QTY    = 50
+    QTY = 50
 
     print("=" * 60)
     print("  Blocklog Example 2: Multi-Agent Hedge Fund")
@@ -172,11 +187,11 @@ if __name__ == "__main__":
     analysis = analyst_agent(TICKER)
 
     if analysis["signal"] != "BUY":
-        print(f"\n[Orchestrator] No BUY signal from analyst — stopping workflow.")
+        print("\n[Orchestrator] No BUY signal from analyst — stopping workflow.")
     else:
         # Step 2: Risk check
         price = analysis["price"]
-        risk  = risk_agent(TICKER, price, QTY, analysis["decision_id"])
+        risk = risk_agent(TICKER, price, QTY, analysis["decision_id"])
 
         if risk["approved"]:
             # Step 3: Execution
@@ -189,7 +204,9 @@ if __name__ == "__main__":
                     metadata={"workflow_id": WORKFLOW_ID, "tickers": [TICKER]},
                     framework="SOC2",
                 )
-                print(f"[Orchestrator] Compliance report: {report.get('id', 'generated')}")
+                print(
+                    f"[Orchestrator] Compliance report: {report.get('id', 'generated')}"
+                )
             except Exception as e:
                 print(f"[Orchestrator] (compliance skipped in demo: {e})")
         else:

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from random import random
 from time import sleep
-import asyncio
 
 
 @dataclass(slots=True)
@@ -12,14 +12,14 @@ class RetryPolicy:
     base_delay: float = 0.25
 
     def backoff(self, attempt: int) -> float:
-        return self.base_delay * (2 ** attempt) + random() * 0.1
+        return self.base_delay * (2**attempt) + random() * 0.1
 
     def run(self, fn):
         last_error = None
         for attempt in range(self.max_retries):
             try:
                 return fn()
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 status_code = None
                 if hasattr(exc, "response") and exc.response is not None:
                     status_code = getattr(exc.response, "status_code", None)
@@ -37,7 +37,7 @@ class RetryPolicy:
         for attempt in range(self.max_retries):
             try:
                 return await fn()
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 status_code = None
                 if hasattr(exc, "response") and exc.response is not None:
                     status_code = getattr(exc.response, "status_code", None)

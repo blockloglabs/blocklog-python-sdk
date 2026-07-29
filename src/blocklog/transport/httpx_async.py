@@ -9,6 +9,7 @@ else:
     requests = None
 
 from blocklog.exceptions import TransportError, map_http_error
+
 from .auth import build_headers
 
 
@@ -79,5 +80,5 @@ class AsyncTransport:
             return None
         try:
             return response.json()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise TransportError("Response was not valid JSON") from exc

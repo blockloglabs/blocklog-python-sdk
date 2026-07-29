@@ -23,13 +23,15 @@ Usage (Layer 1)::
     print(d.id)          # UUID of the recorded decision
     print(d.verified)    # True if cryptographically signed
 """
+
 from __future__ import annotations
 
 import logging
 import traceback as _traceback
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Any, Generator
+from typing import Any
 
 from blocklog.exceptions import BlocklogCommitError
 
@@ -89,7 +91,7 @@ class DecisionContext:
     # Public methods available inside the ``with`` block
     # ------------------------------------------------------------------
 
-    def record_input(self, **kwargs: Any) -> "DecisionContext":
+    def record_input(self, **kwargs: Any) -> DecisionContext:
         """Record structured inputs that fed into this decision.
 
         Call this before the AI model / logic runs.
@@ -108,7 +110,7 @@ class DecisionContext:
         self._send_event("DECISION_INPUT", kwargs)
         return self
 
-    def record_output(self, **kwargs: Any) -> "DecisionContext":
+    def record_output(self, **kwargs: Any) -> DecisionContext:
         """Record structured outputs / results of this decision.
 
         Call this after the AI model / logic produces a result.
@@ -126,7 +128,7 @@ class DecisionContext:
         self._send_event("DECISION_OUTPUT", kwargs)
         return self
 
-    def tag(self, *tags: str) -> "DecisionContext":
+    def tag(self, *tags: str) -> DecisionContext:
         """Attach one or more string labels to this decision.
 
         Tags appear in the dashboard and can be used to filter/search.
@@ -142,7 +144,7 @@ class DecisionContext:
         self,
         reason: str,
         reviewer: str | None = None,
-    ) -> "DecisionContext":
+    ) -> DecisionContext:
         """Request human approval for this decision (HITL).
 
         This is a **non-blocking** call.  It records the approval request
@@ -169,13 +171,14 @@ class DecisionContext:
         self._approval_requested = True
         try:
             from blocklog._global import get_client
+
             client = get_client()
             client.approval.request(
                 decision_id=self.id,
                 reason=reason,
                 reviewer=reviewer,
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             status_code = None
             if hasattr(exc, "response") and exc.response is not None:
                 status_code = getattr(exc.response, "status_code", None)
@@ -195,6 +198,7 @@ class DecisionContext:
         if not self.id:
             raise RuntimeError("Decision has not been committed yet.")
         from blocklog._global import get_client
+
         return get_client().decisions.verify(self.id)
 
     @property
@@ -242,14 +246,19 @@ class DecisionContext:
             )
             logger.debug(
                 "Event send: type=%s, decision_id=%s, trace_id=%s, success=True",
-                event_type, self.id, trace_id
+                event_type,
+                self.id,
+                trace_id,
             )
         except Exception as exc:  # noqa: BLE001
             self._send_event_failures += 1
             self._send_event_last_error = exc
             logger.debug(
                 "Event send: type=%s, decision_id=%s, trace_id=%s, success=False, error=%s",
-                event_type, self.id, trace_id, exc
+                event_type,
+                self.id,
+                trace_id,
+                exc,
             )
 
     def _flush_events(self) -> None:
@@ -267,7 +276,11 @@ class DecisionContext:
         BlocklogCommitError
             If committing the decision to the backend fails.
         """
-        logger.debug("Decision commit attempted: type=%s, asset=%s", self.decision_type, self.asset)
+        logger.debug(
+            "Decision commit attempted: type=%s, asset=%s",
+            self.decision_type,
+            self.asset,
+        )
         try:
             from blocklog._global import get_client
             from blocklog.context.vars import get_context
@@ -290,9 +303,11 @@ class DecisionContext:
             self.id = str(result.get("id", result.get("decision_id", "")))
             logger.debug("Decision commit succeeded: id=%s", self.id)
             self._flush_events()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             self._event_buffer.clear()
-            logger.warning("blocklog: Decision commit failed. Discarding buffered events.")
+            logger.warning(
+                "blocklog: Decision commit failed. Discarding buffered events."
+            )
             logger.debug("Decision commit failed: %s", exc)
             raise BlocklogCommitError(f"Decision commit failed: {exc}") from exc
 
@@ -313,6 +328,7 @@ class DecisionContext:
             return
         try:
             from blocklog._global import get_client
+
             client = get_client()
             client.decisions.update(
                 self.id,
@@ -330,69 +346,94 @@ class DecisionContext:
         """Detect potential issues with the decision context state and record them."""
         self._issues = []
         if self.id is None:
-            self._issues.append({
-                "level": "error",
-                "code": "COMMIT_FAILED",
-                "message": "Decision commit failed; no decision ID was generated."
-            })
+            self._issues.append(
+                {
+                    "level": "error",
+                    "code": "COMMIT_FAILED",
+                    "message": "Decision commit failed; no decision ID was generated.",
+                }
+            )
         if len(self._inputs) == 0:
-            self._issues.append({
-                "level": "warning",
-                "code": "NO_INPUTS",
-                "message": "No inputs were recorded for this decision."
-            })
+            self._issues.append(
+                {
+                    "level": "warning",
+                    "code": "NO_INPUTS",
+                    "message": "No inputs were recorded for this decision.",
+                }
+            )
         if len(self._outputs) == 0:
-            self._issues.append({
-                "level": "warning",
-                "code": "NO_OUTPUTS",
-                "message": "No outputs were recorded for this decision."
-            })
+            self._issues.append(
+                {
+                    "level": "warning",
+                    "code": "NO_OUTPUTS",
+                    "message": "No outputs were recorded for this decision.",
+                }
+            )
         if self.confidence is None:
-            self._issues.append({
-                "level": "info",
-                "code": "CONFIDENCE_MISSING",
-                "message": "Confidence score is missing."
-            })
+            self._issues.append(
+                {
+                    "level": "info",
+                    "code": "CONFIDENCE_MISSING",
+                    "message": "Confidence score is missing.",
+                }
+            )
         if self._send_event_failures > 0:
-            self._issues.append({
-                "level": "error",
-                "code": "EVENTS_DROPPED",
-                "message": f"{self._send_event_failures} events were dropped. Last error: {self._send_event_last_error}"
-            })
+            self._issues.append(
+                {
+                    "level": "error",
+                    "code": "EVENTS_DROPPED",
+                    "message": f"{self._send_event_failures} events were dropped. Last error: {self._send_event_last_error}",
+                }
+            )
 
     def _complete(self) -> None:
         self.status = "complete"
         self._persist()
-        self._send_event("DECISION_COMPLETE", {
-            "inputs": self._inputs,
-            "outputs": self._outputs,
-            "tags": self._tags,
-            "approval_requested": self._approval_requested,
-            "completed_at": _now_iso(),
-        })
-        logger.debug("Decision context exit: status=%s, issue_count=%d", self.status, len(self._issues))
+        self._send_event(
+            "DECISION_COMPLETE",
+            {
+                "inputs": self._inputs,
+                "outputs": self._outputs,
+                "tags": self._tags,
+                "approval_requested": self._approval_requested,
+                "completed_at": _now_iso(),
+            },
+        )
+        logger.debug(
+            "Decision context exit: status=%s, issue_count=%d",
+            self.status,
+            len(self._issues),
+        )
 
     def _error(self, exc: BaseException) -> None:
         self.status = "error"
         self._persist()
-        self._send_event("DECISION_ERROR", {
-            "error_type": type(exc).__name__,
-            "error_message": str(exc),
-            "traceback": _traceback.format_exc(),
-            "tags": self._tags,
-            "failed_at": _now_iso(),
-        })
-        logger.debug("Decision context exit: status=%s, issue_count=%d", self.status, len(self._issues))
+        self._send_event(
+            "DECISION_ERROR",
+            {
+                "error_type": type(exc).__name__,
+                "error_message": str(exc),
+                "traceback": _traceback.format_exc(),
+                "tags": self._tags,
+                "failed_at": _now_iso(),
+            },
+        )
+        logger.debug(
+            "Decision context exit: status=%s, issue_count=%d",
+            self.status,
+            len(self._issues),
+        )
 
 
 # ---------------------------------------------------------------------------
 # Public factory
 # ---------------------------------------------------------------------------
 
+
 @contextmanager
 def decision(
     *,
-    type: str,  # noqa: A002
+    type: str,
     asset: str | None = None,
     confidence: float | None = None,
     metadata: dict[str, Any] | None = None,
@@ -459,6 +500,7 @@ def decision(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()

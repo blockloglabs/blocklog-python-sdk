@@ -71,7 +71,7 @@ response = client.decisions.create(
     asset="TSLA",
     confidence=0.91,
     inputs={"price": 412.50, "signals": ["momentum"]},
-    outputs={"order_id": "ord_123984"}
+    outputs={"order_id": "ord_123984"},
 )
 
 print(f"Decision recorded: {response.get('id')}")
@@ -123,7 +123,7 @@ Flag a high-stakes decision for human review before allowing the system to proce
 response = client.approval.request(
     decision_id="dec_abc123",
     reason="Trade exceeds $500k automated threshold",
-    reviewer="risk-team@fund.com"
+    reviewer="risk-team@fund.com",
 )
 print("Approval requested successfully.")
 ```
@@ -147,9 +147,7 @@ Create an incident based on an anomalous trace and assign it to an investigator.
 
 ```python
 incident = client.incidents.create(
-    title="Unexpected SELL order for AAPL",
-    trace_id="trace-xyz",
-    severity="high"
+    title="Unexpected SELL order for AAPL", trace_id="trace-xyz", severity="high"
 )
 
 incident.assign("alice@fund.com", notes="Please investigate this immediately.")
@@ -161,10 +159,7 @@ incident.resolve(summary="False positive - corrected upstream model weights.")
 Generate a SOC2 compliance report scoped to a specific AI trace.
 
 ```python
-report = client.compliance.generate(
-    trace_id="trace-xyz",
-    framework="SOC2"
-)
+report = client.compliance.generate(trace_id="trace-xyz", framework="SOC2")
 
 # Create a secure shareable link valid for 24 hours
 link = client.compliance.share(report["id"], expires_in=86400)
@@ -200,7 +195,7 @@ from blocklog.exceptions import (
     BlocklogError,
     AuthenticationError,
     RateLimitError,
-    ValidationError
+    ValidationError,
 )
 
 try:

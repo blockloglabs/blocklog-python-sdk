@@ -14,6 +14,7 @@ pip install blocklog
 
 ```python
 import blocklog
+
 print(blocklog.__version__)  # 0.2.2
 ```
 

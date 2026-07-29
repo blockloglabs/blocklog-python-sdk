@@ -23,6 +23,7 @@ Usage (Layer 1)::
 
     trail = approval.audit_trail()
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -57,6 +58,7 @@ def request(
         Extra context to store with the approval request.
     """
     from blocklog._global import get_client
+
     return get_client().approval.request(
         decision_id=decision_id,
         reason=reason,
@@ -66,7 +68,9 @@ def request(
     )
 
 
-def reject(reviewer: str, *, reason: str, decision_id: str | None = None) -> dict[str, Any]:
+def reject(
+    reviewer: str, *, reason: str, decision_id: str | None = None
+) -> dict[str, Any]:
     """Record that a reviewer has rejected a decision.
 
     Parameters
@@ -79,7 +83,10 @@ def reject(reviewer: str, *, reason: str, decision_id: str | None = None) -> dic
         Optional reference to the decision being rejected.
     """
     from blocklog._global import get_client
-    return get_client().approval.reject(reviewer=reviewer, reason=reason, decision_id=decision_id)
+
+    return get_client().approval.reject(
+        reviewer=reviewer, reason=reason, decision_id=decision_id
+    )
 
 
 def escalate(
@@ -100,6 +107,7 @@ def escalate(
         Explanation for the escalation.
     """
     from blocklog._global import get_client
+
     return get_client().approval.escalate(
         from_reviewer=from_reviewer,
         to_reviewer=to_reviewer,
@@ -110,10 +118,12 @@ def escalate(
 def list_overrides() -> list[dict[str, Any]]:
     """Return all HITL override records for the company."""
     from blocklog._global import get_client
+
     return get_client().approval.list_overrides()
 
 
 def audit_trail() -> list[dict[str, Any]]:
     """Return the full HITL audit trail in reverse-chronological order."""
     from blocklog._global import get_client
+
     return get_client().approval.audit_trail()

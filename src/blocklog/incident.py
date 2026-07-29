@@ -20,6 +20,7 @@ Usage (Layer 1)::
 
     report = inc.report()
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -35,7 +36,7 @@ def create(
     severity: str = "medium",
     description: str | None = None,
     metadata: dict[str, Any] | None = None,
-) -> "IncidentHandle":
+) -> IncidentHandle:
     """Create a new incident.
 
     Parameters
@@ -68,6 +69,7 @@ def create(
     >>> inc.resolve(summary="False positive")
     """
     from blocklog._global import get_client
+
     return get_client().incidents.create(
         title=title,
         trace_id=trace_id,
@@ -77,13 +79,15 @@ def create(
     )
 
 
-def get(incident_id: str) -> "IncidentHandle":
+def get(incident_id: str) -> IncidentHandle:
     """Fetch an existing incident by ID."""
     from blocklog._global import get_client
+
     return get_client().incidents.get(incident_id)
 
 
-def list_all() -> list["IncidentHandle"]:
+def list_all() -> list[IncidentHandle]:
     """List all incidents for the authenticated company."""
     from blocklog._global import get_client
+
     return get_client().incidents.list()

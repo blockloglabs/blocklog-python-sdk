@@ -12,9 +12,10 @@ Demonstrates the core Blocklog SDK workflow for a simple AI trading agent:
 Run:
     BLOCKLOG_API_KEY=blk_... python 01_stock_trading_agent.py
 """
+
 import os
 import random
-from datetime import datetime
+from datetime import UTC, datetime
 
 import blocklog
 
@@ -49,9 +50,9 @@ def place_order(ticker: str, qty: int, price: float) -> dict:
         "order_id": order_id,
         "ticker": ticker,
         "qty": qty,
-        "filled_at": price * 1.001,   # slippage
+        "filled_at": price * 1.001,  # slippage
         "value": price * qty,
-        "filled_at_ts": datetime.utcnow().isoformat(),
+        "filled_at_ts": datetime.now(UTC).isoformat()
     }
 
 
@@ -62,14 +63,16 @@ def run_trading_agent(ticker: str = "TSLA") -> dict:
     print(f"  Agent started for: {ticker}")
 
     # Fetch market data (recorded as TOOL_CALL events)
-    price  = fetch_price(ticker)
+    price = fetch_price(ticker)
     volume = fetch_volume(ticker)
 
     # Momentum signal (simplified)
     momentum_signal = "BUY" if volume > 2_000_000 else "HOLD"
-    confidence      = round(random.uniform(0.7, 0.98), 2)
+    confidence = round(random.uniform(0.7, 0.98), 2)
 
-    print(f"  Price: ${price:.2f} | Volume: {volume:,} | Signal: {momentum_signal} | Confidence: {confidence}")
+    print(
+        f"  Price: ${price:.2f} | Volume: {volume:,} | Signal: {momentum_signal} | Confidence: {confidence}"
+    )
 
     if momentum_signal != "BUY":
         print("  No BUY signal — holding position.")
@@ -92,7 +95,7 @@ def run_trading_agent(ticker: str = "TSLA") -> dict:
         d.tag("high-conviction", "momentum-strategy")
 
         # Execute the trade
-        qty   = int(10_000 / price)   # invest ~$10k
+        qty = int(10_000 / price)  # invest ~$10k
         order = place_order(ticker, qty, price)
 
         # Record what happened
@@ -122,7 +125,12 @@ def run_trading_agent(ticker: str = "TSLA") -> dict:
     except Exception as e:
         print(f"  (verification skipped in demo mode: {e})")
 
-    return {"action": "BUY", "ticker": ticker, "order": order, "decision_id": decision_id}
+    return {
+        "action": "BUY",
+        "ticker": ticker,
+        "order": order,
+        "decision_id": decision_id,
+    }
 
 
 # ── 6. Run the agent ───────────────────────────────────────────────────────────

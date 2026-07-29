@@ -19,6 +19,7 @@ from blocklog.context.managers import agent_session
 from blocklog.context.vars import get_context
 from blocklog.integrations.langchain import instrument_langchain
 from blocklog.integrations.langgraph import instrument_langgraph
+from blocklog.integrations.litellm import instrument_litellm
 from blocklog.integrations.openai_agents import instrument_openai
 from blocklog.middleware.hooks import apply_hooks
 from blocklog.models.events import EventEnvelope
@@ -26,7 +27,6 @@ from blocklog.models.responses import IngestResponse
 from blocklog.signing.ed25519 import hash_sign
 from blocklog.transport.httpx_sync import SyncTransport
 from blocklog.transport.retry import RetryPolicy
-from blocklog.integrations.litellm import instrument_litellm
 
 logger = logging.getLogger("blocklog")
 
@@ -91,53 +91,65 @@ class BlocklogClient:
 
         # ── Legacy aliases (backward compatibility) ───────────────────
         # These point to the same new clients so old code keeps working.
-        self.forensics = self.replay   # client.forensics.compare(...) still works
-        self.hitl = self.approval      # client.hitl.reject(...) still works
+        self.forensics = self.replay  # client.forensics.compare(...) still works
+        self.hitl = self.approval  # client.hitl.reject(...) still works
 
     @classmethod
-    def from_env(cls) -> "BlocklogClient":
+    def from_env(cls) -> BlocklogClient:
         """Create a client configured entirely from environment variables."""
         return cls(BlocklogConfig.from_env())
 
-    def set_access_token(self, token: str) -> "BlocklogClient":
+    def set_access_token(self, token: str) -> BlocklogClient:
         self.transport.set_access_token(token)
         self.config.access_token = token
         return self
 
-    def add_hook(self, hook) -> "BlocklogClient":
+    def add_hook(self, hook) -> BlocklogClient:
         """Register a middleware hook applied to every outbound event payload."""
         self.hooks.append(hook)
         return self
 
-    def session(self, *, agent_id: str | None = None, source: str = "python-sdk", workflow_id=None):
+    def session(
+        self,
+        *,
+        agent_id: str | None = None,
+        source: str = "python-sdk",
+        workflow_id=None,
+    ):
         """Open an ``agent_session`` context manager (backward-compatible).
 
         Prefer the ``@blocklog.agent`` decorator for new code.
         """
         return agent_session(agent_id=agent_id, source=source, workflow_id=workflow_id)
 
-    def instrument_openai_agents(self) -> "BlocklogClient":
+    def instrument_openai_agents(self) -> BlocklogClient:
         """Auto-instrument the OpenAI Agents SDK."""
         return instrument_openai(self)
 
-    def instrument_litellm(self) -> "BlocklogClient":
+    def instrument_litellm(self) -> BlocklogClient:
         """Auto-instrument LiteLLM."""
         return instrument_litellm(self)
 
-    def instrument_langchain(self) -> "BlocklogClient":
+    def instrument_langchain(self) -> BlocklogClient:
         """Auto-instrument LangChain."""
         return instrument_langchain(self)
 
-    def instrument_langgraph(self) -> "BlocklogClient":
+    def instrument_langgraph(self) -> BlocklogClient:
         """Auto-instrument LangGraph."""
         return instrument_langgraph(self)
 
     # ── Low-level event ingest (Layer 3) ─────────────────────────────
 
-    def event(self, event_type: str, payload: dict[str, Any], **kwargs) -> IngestResponse:
+    def event(
+        self, event_type: str, payload: dict[str, Any], **kwargs
+    ) -> IngestResponse:
         """Emit a single event immediately (synchronous)."""
         envelope = self._build_event(event_type=event_type, payload=payload, **kwargs)
-        result = self.retry.run(lambda: self.transport.request("POST", "/logs", json=self._serialize(envelope)))
+        result = self.retry.run(
+            lambda: self.transport.request(
+                "POST", "/logs", json=self._serialize(envelope)
+            )
+        )
         return IngestResponse.model_validate(result)
 
     def enqueue(self, event_type: str, payload: dict[str, Any], **kwargs):
@@ -154,17 +166,24 @@ class BlocklogClient:
         if not batch:
             return {"ingested": 0, "log_ids": []}
         payload = {"logs": [self._serialize(item) for item in batch]}
-        return self.retry.run(lambda: self.transport.request("POST", "/logs/batch", json=payload))
+        return self.retry.run(
+            lambda: self.transport.request("POST", "/logs/batch", json=payload)
+        )
 
-    def _build_event(self, *, event_type: str, payload: dict[str, Any], **kwargs) -> EventEnvelope:
+    def _build_event(
+        self, *, event_type: str, payload: dict[str, Any], **kwargs
+    ) -> EventEnvelope:
         context = get_context()
         event = EventEnvelope(
             event_type=event_type,
             payload=payload,
-            source=kwargs.get("source") or (context.source if context else "python-sdk"),
+            source=kwargs.get("source")
+            or (context.source if context else "python-sdk"),
             trace_id=kwargs.get("trace_id") or (context.trace_id if context else None),
-            session_id=kwargs.get("session_id") or (context.session_id if context else None),
-            workflow_id=kwargs.get("workflow_id") or (context.workflow_id if context else None),
+            session_id=kwargs.get("session_id")
+            or (context.session_id if context else None),
+            workflow_id=kwargs.get("workflow_id")
+            or (context.workflow_id if context else None),
             agent_id=kwargs.get("agent_id") or (context.agent_id if context else None),
             parent_event_id=kwargs.get("parent_event_id"),
             root_event_id=kwargs.get("root_event_id"),
@@ -187,8 +206,12 @@ class BlocklogClient:
             "trace_id": str(envelope.trace_id) if envelope.trace_id else None,
             "session_id": str(envelope.session_id) if envelope.session_id else None,
             "workflow_id": str(envelope.workflow_id) if envelope.workflow_id else None,
-            "parent_event_id": str(envelope.parent_event_id) if envelope.parent_event_id else None,
-            "root_event_id": str(envelope.root_event_id) if envelope.root_event_id else None,
+            "parent_event_id": str(envelope.parent_event_id)
+            if envelope.parent_event_id
+            else None,
+            "root_event_id": str(envelope.root_event_id)
+            if envelope.root_event_id
+            else None,
             "span_id": envelope.span_id,
             "attempt_no": envelope.attempt_no,
             "causality_type": envelope.causality_type,
@@ -199,14 +222,14 @@ class BlocklogClient:
         }
         payload = apply_hooks(payload, self.hooks)
         if self.config.signing_key:
-            payload["log_signature"] = hash_sign(payload, private_key=self.config.signing_key)
+            payload["log_signature"] = hash_sign(
+                payload, private_key=self.config.signing_key
+            )
         return payload
 
     @staticmethod
     def _idempotency_key(envelope: EventEnvelope) -> str:
         digest = sha256(
-            f"{envelope.event_type}:{envelope.source}:{envelope.trace_id}:{envelope.session_id}:{envelope.payload}".encode(
-                "utf-8"
-            )
+            f"{envelope.event_type}:{envelope.source}:{envelope.trace_id}:{envelope.session_id}:{envelope.payload}".encode()
         ).hexdigest()[:32]
         return f"blk_{digest}"
