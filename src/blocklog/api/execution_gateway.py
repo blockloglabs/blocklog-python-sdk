@@ -23,8 +23,7 @@ Backend endpoints
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional, List
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from blocklog.client import BlocklogClient
@@ -80,15 +79,15 @@ class ExecutionGatewayClient:
         action_type: str,
         amount_minor: int = 0,
         currency: str = "USD",
-        destination: Optional[str] = None,
-        trace_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        workflow_id: Optional[str] = None,
-        idempotency_key: Optional[str] = None,
-        subject_reference: Optional[str] = None,
-        transaction_reference: Optional[str] = None,
-        context: Optional[dict[str, Any]] = None,
-        approval: Optional[dict[str, Any]] = None,
+        destination: str | None = None,
+        trace_id: str | None = None,
+        session_id: str | None = None,
+        workflow_id: str | None = None,
+        idempotency_key: str | None = None,
+        subject_reference: str | None = None,
+        transaction_reference: str | None = None,
+        context: dict[str, Any] | None = None,
+        approval: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         Authorize an execution through the gateway with policy evaluation.
@@ -222,8 +221,8 @@ class ExecutionGatewayClient:
         token: str,
         processor: str,
         action_type: str,
-        execution_reference: Optional[str] = None,
-        transaction_reference: Optional[str] = None,
+        execution_reference: str | None = None,
+        transaction_reference: str | None = None,
     ) -> dict[str, Any]:
         """
         Consume an execution token - enforces one-time usage.
@@ -295,12 +294,12 @@ class ExecutionGatewayClient:
         action_type: str,
         amount_minor: int,
         currency: str = "USD",
-        destination: Optional[str] = None,
-        agent_trust_level: Optional[str] = None,
+        destination: str | None = None,
+        agent_trust_level: str | None = None,
         delegation_depth: int = 1,
         context_stale: bool = False,
         policy_violations: int = 0,
-        amount_thresholds: Optional[dict[str, int]] = None,
+        amount_thresholds: dict[str, int] | None = None,
     ) -> dict[str, Any]:
         """
         Calculate risk score for an action.
@@ -414,7 +413,9 @@ class ExecutionGatewayClient:
             Policy object with all configuration.
         """
         return self._client.retry.run(
-            lambda: self._client.transport.request("GET", f"/execution/policies/{policy_id}")
+            lambda: self._client.transport.request(
+                "GET", f"/execution/policies/{policy_id}"
+            )
         )
 
     # ── Receipts ─────────────────────────────────────────────────────────────
@@ -422,7 +423,7 @@ class ExecutionGatewayClient:
     def verify_receipt(
         self,
         receipt_json: str,
-        public_key: Optional[str] = None,
+        public_key: str | None = None,
         verify_signature: bool = True,
         verify_merkle: bool = True,
     ) -> dict[str, Any]:
@@ -499,9 +500,9 @@ class ExecutionGatewayClient:
 
     def list_receipts(
         self,
-        status: Optional[str] = None,
-        policy_id: Optional[str] = None,
-        processor: Optional[str] = None,
+        status: str | None = None,
+        policy_id: str | None = None,
+        processor: str | None = None,
         limit: int = 100,
         offset: int = 0,
     ) -> list[dict[str, Any]]:

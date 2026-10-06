@@ -110,7 +110,9 @@ class ComplianceClient:
         create_auditor_api_key: bool = False,
     ) -> dict[str, Any]:
         """Create a shareable link for a compliance report."""
-        target_recipients = recipients or ([] if not recipient_email else [recipient_email])
+        target_recipients = recipients or (
+            [] if not recipient_email else [recipient_email]
+        )
         payload: dict[str, Any] = {
             "recipients": target_recipients,
             "create_auditor_api_key": create_auditor_api_key,
@@ -130,7 +132,6 @@ class ComplianceClient:
                 "POST", f"/compliance/reports/{report_id}/share", json=payload
             )
         )
-
 
     def export(
         self,

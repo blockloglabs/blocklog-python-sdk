@@ -3,35 +3,37 @@ Executions API Module
 
 Provides high-level interface for managing agent executions with full lifecycle tracking.
 """
-from typing import Optional, List, Dict, Any
-from datetime import datetime
 
-from blocklog.models.execution import Execution, ExecutionStep, ExecutionApproval
+import builtins
+from datetime import datetime
+from typing import Any
+
+from blocklog.models.execution import Execution, ExecutionStep
 
 
 class ExecutionsAPI:
     """Client for execution management API."""
-    
+
     def __init__(self, client):
         self._client = client
-    
+
     def create(
         self,
         execution_id: str,
-        agent_id: Optional[str] = None,
-        agent_version: Optional[str] = None,
-        principal_id: Optional[str] = None,
-        principal_type: Optional[str] = None,
-        authority_chain: Optional[Dict[str, Any]] = None,
-        policy_id: Optional[str] = None,
-        policy_version: Optional[int] = None,
-        context: Optional[Dict[str, Any]] = None,
-        context_provenance: Optional[Dict[str, Any]] = None,
-        timeout_at: Optional[datetime] = None,
+        agent_id: str | None = None,
+        agent_version: str | None = None,
+        principal_id: str | None = None,
+        principal_type: str | None = None,
+        authority_chain: dict[str, Any] | None = None,
+        policy_id: str | None = None,
+        policy_version: int | None = None,
+        context: dict[str, Any] | None = None,
+        context_provenance: dict[str, Any] | None = None,
+        timeout_at: datetime | None = None,
     ) -> Execution:
         """
         Create a new execution record.
-        
+
         Args:
             execution_id: External facing execution ID
             agent_id: Agent performing the execution
@@ -44,7 +46,7 @@ class ExecutionsAPI:
             context: Execution context (input data)
             context_provenance: Where context came from
             timeout_at: Optional timeout for execution
-            
+
         Returns:
             Execution: Created execution record
         """
@@ -66,36 +68,36 @@ class ExecutionsAPI:
             },
         )
         return Execution(**response)
-    
+
     def get(self, execution_id: str) -> Execution:
         """
         Get execution by external ID.
-        
+
         Args:
             execution_id: External facing execution ID
-            
+
         Returns:
             Execution: Execution record
         """
         response = self._client._get(f"/executions/{execution_id}")
         return Execution(**response)
-    
+
     def list(
         self,
-        agent_id: Optional[str] = None,
-        status: Optional[str] = None,
+        agent_id: str | None = None,
+        status: str | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[Execution]:
+    ) -> list[Execution]:
         """
         List executions with optional filters.
-        
+
         Args:
             agent_id: Optional agent filter
             status: Optional status filter
             limit: Maximum results
             offset: Pagination offset
-            
+
         Returns:
             List of Execution records
         """
@@ -104,58 +106,58 @@ class ExecutionsAPI:
             params["agent_id"] = agent_id
         if status:
             params["status"] = status
-            
+
         response = self._client._get("/executions", params=params)
         return [Execution(**e) for e in response.get("executions", [])]
-    
+
     def update_status(
         self,
         execution_id: str,
         new_status: str,
-        completed_at: Optional[datetime] = None,
+        completed_at: datetime | None = None,
     ) -> Execution:
         """
         Update execution status.
-        
+
         Args:
             execution_id: External facing execution ID
             new_status: Target status
             completed_at: Optional completion timestamp
-            
+
         Returns:
             Execution: Updated execution record
         """
         json_data = {"new_status": new_status}
         if completed_at:
             json_data["completed_at"] = completed_at.isoformat()
-            
+
         response = self._client._post(
             f"/executions/{execution_id}/status",
             params=json_data,
         )
         return Execution(**response)
-    
+
     def record_step(
         self,
         execution_id: str,
         sequence: int,
         actor_id: str,
         actor_type: str = "agent",
-        step_type: str = None,
-        action: str = None,
-        input_hash: Optional[str] = None,
-        input_metadata: Optional[Dict[str, Any]] = None,
-        output_hash: Optional[str] = None,
-        output_metadata: Optional[Dict[str, Any]] = None,
+        step_type: str | None = None,
+        action: str | None = None,
+        input_hash: str | None = None,
+        input_metadata: dict[str, Any] | None = None,
+        output_hash: str | None = None,
+        output_metadata: dict[str, Any] | None = None,
         status: str = "PENDING",
-        error_message: Optional[str] = None,
-        error_code: Optional[str] = None,
-        evidence_path: Optional[Dict[str, Any]] = None,
-        signature: Optional[str] = None,
+        error_message: str | None = None,
+        error_code: str | None = None,
+        evidence_path: dict[str, Any] | None = None,
+        signature: str | None = None,
     ) -> ExecutionStep:
         """
         Record an execution step.
-        
+
         Args:
             execution_id: External facing execution ID
             sequence: Step sequence number
@@ -172,7 +174,7 @@ class ExecutionsAPI:
             error_code: Error code if failed
             evidence_path: Causal relationships
             signature: Optional signature
-            
+
         Returns:
             ExecutionStep: Created step record
         """
@@ -192,20 +194,20 @@ class ExecutionsAPI:
             "evidence_path": evidence_path,
             "signature": signature,
         }
-        
+
         response = self._client._post(
             f"/executions/{execution_id}/steps",
             params=json_data,
         )
         return ExecutionStep(**response)
-    
-    def get_steps(self, execution_id: str) -> List[ExecutionStep]:
+
+    def get_steps(self, execution_id: str) -> builtins.list[ExecutionStep]:
         """
         Get all steps for an execution.
-        
+
         Args:
             execution_id: External facing execution ID
-            
+
         Returns:
             List of ExecutionStep records
         """

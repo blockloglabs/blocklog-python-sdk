@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 import logging
-from uuid import uuid4
 from typing import Any
+from uuid import uuid4
 
 from blocklog.api.approval import ApprovalClient
 from blocklog.api.auth import AuthClient
 from blocklog.api.compliance import ComplianceClient
 from blocklog.api.decisions import DecisionsClient
-from blocklog.api.executions import ExecutionsAPI
 from blocklog.api.execution_gateway import ExecutionGatewayClient
+from blocklog.api.executions import ExecutionsAPI
 from blocklog.api.incidents import IncidentsClient
-from blocklog.api.replay import ReplayClient
 from blocklog.api.receipt_verification import ReceiptVerificationClient
+from blocklog.api.replay import ReplayClient
 from blocklog.api.teams import TeamsClient
 from blocklog.api.traces import TracesClient
 from blocklog.api.verify import VerifyClient
@@ -162,7 +162,9 @@ class BlocklogClient:
         result = self.transport.request("POST", "/logs", json=self._serialize(envelope))
         return IngestResponse.model_validate(result)
 
-    def record_event(self, event_type: str, payload: dict[str, Any], **kwargs) -> IngestResponse:
+    def record_event(
+        self, event_type: str, payload: dict[str, Any], **kwargs
+    ) -> IngestResponse:
         """Record one backend-supported log event immediately.
 
         This is the explicit counterpart to Go's ``RecordEvent``; event data is
@@ -176,7 +178,9 @@ class BlocklogClient:
 
     def _get(self, path: str, *, params: dict | None = None):
         """Issue a retry-safe read request."""
-        return self.retry.run(lambda: self.transport.request("GET", path, params=params))
+        return self.retry.run(
+            lambda: self.transport.request("GET", path, params=params)
+        )
 
     def _post(self, path: str, *, json: dict | None = None, params: dict | None = None):
         """Issue a mutation without implicit retry."""

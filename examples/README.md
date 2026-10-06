@@ -46,11 +46,13 @@ delegation = client.delegations.create(
 )
 
 # Create delegation chain
-client.delegations.create_chain(chain=[
-    {"id": "org", "type": "organization"},
-    {"id": "user", "type": "user"},
-    {"id": "agent", "type": "agent"},
-])
+client.delegations.create_chain(
+    chain=[
+        {"id": "org", "type": "organization"},
+        {"id": "user", "type": "user"},
+        {"id": "agent", "type": "agent"},
+    ]
+)
 ```
 
 ### Execution Lifecycle

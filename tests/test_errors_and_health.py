@@ -8,7 +8,13 @@ import pytest
 import blocklog
 from blocklog.client import BlocklogClient
 from blocklog.config import BlocklogConfig
-from blocklog.exceptions import AuthenticationError, BlocklogAuthError, BlocklogCommitError, BlocklogError, TransportError
+from blocklog.exceptions import (
+    AuthenticationError,
+    BlocklogAuthError,
+    BlocklogCommitError,
+    BlocklogError,
+    TransportError,
+)
 from blocklog.managers.decision import DecisionContext
 
 
@@ -174,11 +180,9 @@ def test_sdk_health_check_api_unreachable():
 
     # Mock transport request to raise a connection/network error
     client.transport.request = MagicMock(
-    side_effect=TransportError("Connection refused")
-)
-    client.decisions.list = MagicMock(
         side_effect=TransportError("Connection refused")
     )
+    client.decisions.list = MagicMock(side_effect=TransportError("Connection refused"))
 
     with patch("blocklog._global.get_client", return_value=client):
         with pytest.raises(BlocklogAuthError) as exc_info:
@@ -196,9 +200,7 @@ def test_sdk_health_check_auth_invalid():
     client.transport.request = MagicMock(return_value={"status": "ok"})
 
     # Auth check fails
-    client.decisions.list = MagicMock(
-        side_effect=AuthenticationError("Unauthorized")
-    )
+    client.decisions.list = MagicMock(side_effect=AuthenticationError("Unauthorized"))
 
     with patch("blocklog._global.get_client", return_value=client):
         with pytest.raises(BlocklogAuthError) as exc_info:

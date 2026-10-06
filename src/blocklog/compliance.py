@@ -98,7 +98,6 @@ def share(
     )
 
 
-
 def export(report_id: str, *, download: bool = False) -> dict[str, Any]:
     """Export a compliance report as JSON."""
     from blocklog._global import get_client

@@ -52,7 +52,7 @@ def place_order(ticker: str, qty: int, price: float) -> dict:
         "qty": qty,
         "filled_at": price * 1.001,  # slippage
         "value": price * qty,
-        "filled_at_ts": datetime.now(UTC).isoformat()
+        "filled_at_ts": datetime.now(UTC).isoformat(),
     }
 
 

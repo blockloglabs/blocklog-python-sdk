@@ -10,7 +10,7 @@ if str(SRC_DIR) not in sys.path:
 
 try:
     import dotenv
+
     dotenv.load_dotenv = lambda *args, **kwargs: False
 except ImportError:
     pass
-
