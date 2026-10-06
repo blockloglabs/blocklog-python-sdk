@@ -26,35 +26,28 @@ from typing import Any
 def generate(
     trace_id: str | None = None,
     *,
+    title: str | None = None,
+    report_kind: str = "design_partner_readiness",
+    scope_type: str | None = None,
     framework: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
     metadata: dict[str, Any] | None = None,
+    **kwargs: Any,
 ) -> dict[str, Any]:
-    """Generate a compliance report.
-
-    Parameters
-    ----------
-    trace_id:
-        Scope the report to a specific trace.  Omit for a company-wide
-        report.
-    framework:
-        Compliance framework (``"SOC2"``, ``"GDPR"``, ``"ISO27001"``…).
-    date_from:
-        ISO-8601 start of the reporting window.
-    date_to:
-        ISO-8601 end of the reporting window.
-    metadata:
-        Arbitrary extra data to embed in the report.
-    """
+    """Generate a compliance report."""
     from blocklog._global import get_client
 
     return get_client().compliance.generate(
         trace_id=trace_id,
+        title=title,
+        report_kind=report_kind,
+        scope_type=scope_type,
         framework=framework,
         date_from=date_from,
         date_to=date_to,
         metadata=metadata,
+        **kwargs,
     )
 
 
@@ -82,17 +75,28 @@ def dashboard() -> dict[str, Any]:
 def share(
     report_id: str,
     *,
-    expires_in: int | None = None,
+    recipients: list[str] | None = None,
     recipient_email: str | None = None,
+    expires_in: int | None = None,
+    expires_in_days: int | None = None,
+    note: str | None = None,
+    create_auditor_api_key: bool = False,
+    **kwargs: Any,
 ) -> dict[str, Any]:
     """Create a shareable link for a compliance report."""
     from blocklog._global import get_client
 
     return get_client().compliance.share(
         report_id=report_id,
-        expires_in=expires_in,
+        recipients=recipients,
         recipient_email=recipient_email,
+        expires_in=expires_in,
+        expires_in_days=expires_in_days,
+        note=note,
+        create_auditor_api_key=create_auditor_api_key,
+        **kwargs,
     )
+
 
 
 def export(report_id: str, *, download: bool = False) -> dict[str, Any]:

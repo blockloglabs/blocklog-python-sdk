@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import logging
-from hashlib import sha256
+from uuid import uuid4
 from typing import Any
 
 from blocklog.api.approval import ApprovalClient
 from blocklog.api.auth import AuthClient
 from blocklog.api.compliance import ComplianceClient
 from blocklog.api.decisions import DecisionsClient
+from blocklog.api.executions import ExecutionsAPI
+from blocklog.api.execution_gateway import ExecutionGatewayClient
 from blocklog.api.incidents import IncidentsClient
 from blocklog.api.replay import ReplayClient
+from blocklog.api.receipt_verification import ReceiptVerificationClient
 from blocklog.api.teams import TeamsClient
 from blocklog.api.traces import TracesClient
 from blocklog.api.verify import VerifyClient
@@ -59,8 +62,14 @@ class BlocklogClient:
         Layer 2 client for compliance report generation.
     verify : VerifyClient
         Layer 2 client for cryptographic verification.
+    trust : ReceiptVerificationClient
+        Layer 2 client for cryptographic receipt verification.
     traces : TracesClient
         Layer 2 client for trace/session queries.
+    executions : ExecutionsAPI
+        Layer 2 client for agent execution lifecycle.
+    execution_gateway : ExecutionGatewayClient
+        Layer 2 client for gateway features (risk, auth, consumption).
     """
 
     def __init__(self, config: BlocklogConfig | None = None, **kwargs) -> None:
@@ -85,9 +94,12 @@ class BlocklogClient:
         self.replay = ReplayClient(self)
         self.compliance = ComplianceClient(self)
         self.verify = VerifyClient(self)
+        self.trust = ReceiptVerificationClient()
         self.traces = TracesClient(self)
+        self.executions = ExecutionsAPI(self)
         self.teams = TeamsClient(self)
         self.auth = AuthClient(self)
+        self.execution_gateway = ExecutionGatewayClient(self)
 
         # ── Legacy aliases (backward compatibility) ───────────────────
         # These point to the same new clients so old code keeps working.
@@ -145,12 +157,30 @@ class BlocklogClient:
     ) -> IngestResponse:
         """Emit a single event immediately (synchronous)."""
         envelope = self._build_event(event_type=event_type, payload=payload, **kwargs)
-        result = self.retry.run(
-            lambda: self.transport.request(
-                "POST", "/logs", json=self._serialize(envelope)
-            )
-        )
+        # The backend does not document idempotency for /logs, so do not retry
+        # this mutating request client-side.
+        result = self.transport.request("POST", "/logs", json=self._serialize(envelope))
         return IngestResponse.model_validate(result)
+
+    def record_event(self, event_type: str, payload: dict[str, Any], **kwargs) -> IngestResponse:
+        """Record one backend-supported log event immediately.
+
+        This is the explicit counterpart to Go's ``RecordEvent``; event data is
+        sent to ``POST /api/v1/logs`` using the backend's ingestion schema.
+        """
+        if not event_type:
+            raise ValueError("event_type is required")
+        if not isinstance(payload, dict):
+            raise TypeError("payload must be a dictionary")
+        return self.event(event_type, payload, **kwargs)
+
+    def _get(self, path: str, *, params: dict | None = None):
+        """Issue a retry-safe read request."""
+        return self.retry.run(lambda: self.transport.request("GET", path, params=params))
+
+    def _post(self, path: str, *, json: dict | None = None, params: dict | None = None):
+        """Issue a mutation without implicit retry."""
+        return self.transport.request("POST", path, json=json, params=params)
 
     def enqueue(self, event_type: str, payload: dict[str, Any], **kwargs):
         """Enqueue an event for batched delivery."""
@@ -166,9 +196,7 @@ class BlocklogClient:
         if not batch:
             return {"ingested": 0, "log_ids": []}
         payload = {"logs": [self._serialize(item) for item in batch]}
-        return self.retry.run(
-            lambda: self.transport.request("POST", "/logs/batch", json=payload)
-        )
+        return self.transport.request("POST", "/logs/batch", json=payload)
 
     def _build_event(
         self, *, event_type: str, payload: dict[str, Any], **kwargs
@@ -229,7 +257,4 @@ class BlocklogClient:
 
     @staticmethod
     def _idempotency_key(envelope: EventEnvelope) -> str:
-        digest = sha256(
-            f"{envelope.event_type}:{envelope.source}:{envelope.trace_id}:{envelope.session_id}:{envelope.payload}".encode()
-        ).hexdigest()[:32]
-        return f"blk_{digest}"
+        return f"blk_{uuid4().hex}"

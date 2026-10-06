@@ -102,7 +102,7 @@ def test_client_event_building():
 
 
 def test_client_idempotency_key_generation():
-    """Test that idempotency keys are generated deterministically."""
+    """Each independently created event receives a collision-resistant key."""
     config = BlocklogConfig(api_key="blk_test")
     client = BlocklogClient(config)
 
@@ -113,8 +113,7 @@ def test_client_idempotency_key_generation():
         event_type="TEST", payload={"key": "value"}, source="test"
     )
 
-    # Same inputs should produce same idempotency key
-    assert event1.idempotency_key == event2.idempotency_key
+    assert event1.idempotency_key != event2.idempotency_key
 
 
 def test_client_serialization():

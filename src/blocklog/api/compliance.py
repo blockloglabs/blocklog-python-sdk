@@ -44,33 +44,22 @@ class ComplianceClient:
         self,
         trace_id: str | None = None,
         *,
+        title: str | None = None,
+        report_kind: str = "design_partner_readiness",
+        scope_type: str | None = None,
         framework: str | None = None,
         date_from: str | None = None,
         date_to: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Generate a compliance report.
-
-        Parameters
-        ----------
-        trace_id:
-            Scope the report to a specific trace.  Omit to generate a
-            company-wide report.
-        framework:
-            Compliance framework (``"SOC2"``, ``"GDPR"``, ``"ISO27001"``…).
-        date_from:
-            ISO-8601 start of the reporting window.
-        date_to:
-            ISO-8601 end of the reporting window.
-        metadata:
-            Arbitrary extra data to embed in the report.
-
-        Returns
-        -------
-        dict
-            The generated report record.
-        """
-        payload: dict[str, Any] = {}
+        """Generate a compliance report."""
+        effective_scope = scope_type or ("trace" if trace_id is not None else "company")
+        report_title = title or f"Compliance Report - {framework or 'General'}"
+        payload: dict[str, Any] = {
+            "title": report_title,
+            "report_kind": report_kind,
+            "scope_type": effective_scope,
+        }
         if trace_id is not None:
             payload["trace_id"] = trace_id
         if framework is not None:
@@ -113,28 +102,26 @@ class ComplianceClient:
         self,
         report_id: str,
         *,
-        expires_in: int | None = None,
+        recipients: list[str] | None = None,
         recipient_email: str | None = None,
+        expires_in: int | None = None,
+        expires_in_days: int | None = None,
+        note: str | None = None,
+        create_auditor_api_key: bool = False,
     ) -> dict[str, Any]:
-        """Create a shareable link for a compliance report.
-
-        Parameters
-        ----------
-        report_id:
-            UUID of the report to share.
-        expires_in:
-            Seconds until the share link expires.
-        recipient_email:
-            Optional email of the recipient (for audit purposes).
-
-        Returns
-        -------
-        dict
-            Response including ``share_url`` or ``token``.
-        """
-        payload: dict[str, Any] = {}
-        if expires_in is not None:
+        """Create a shareable link for a compliance report."""
+        target_recipients = recipients or ([] if not recipient_email else [recipient_email])
+        payload: dict[str, Any] = {
+            "recipients": target_recipients,
+            "create_auditor_api_key": create_auditor_api_key,
+        }
+        if expires_in_days is not None:
+            payload["expires_in_days"] = expires_in_days
+        elif expires_in is not None:
             payload["expires_in"] = expires_in
+            payload["expires_in_days"] = max(1, expires_in // 86400)
+        if note is not None:
+            payload["note"] = note
         if recipient_email is not None:
             payload["recipient_email"] = recipient_email
 
@@ -143,6 +130,7 @@ class ComplianceClient:
                 "POST", f"/compliance/reports/{report_id}/share", json=payload
             )
         )
+
 
     def export(
         self,

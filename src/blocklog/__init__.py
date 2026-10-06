@@ -58,7 +58,7 @@ from blocklog.team_utils import (
     is_team_owner,
 )
 
-__version__ = "0.2.5"
+__version__ = "0.2.6"
 
 # Expose only the minimum concepts required to understand Blocklog.
 # Advanced features (incident, verify, compliance, clients) are hidden

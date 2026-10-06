@@ -49,10 +49,17 @@ class SyncTransport:
             extra=headers,
             skip_auth=skip_auth,
         )
+        clean_path = path if path.startswith("/") else f"/{path}"
+        if clean_path.startswith("/api/v1/"):
+            clean_path = clean_path[7:]
+        elif clean_path == "/api/v1":
+            clean_path = ""
+        url = f"{self.base_url}{clean_path}"
+
         if self.client is not None:
             response = self.client.request(
                 method,
-                f"{self.base_url}{path}",
+                url,
                 json=json,
                 params=params,
                 headers=request_headers,
@@ -60,7 +67,7 @@ class SyncTransport:
         else:
             response = self.requests_session.request(
                 method,
-                f"{self.base_url}{path}",
+                url,
                 json=json,
                 params=params,
                 headers=request_headers,
